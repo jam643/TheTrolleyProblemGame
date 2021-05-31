@@ -1,1 +1,1 @@
-__all__ = ["ManualControl"]
+__all__ = ["ManualControl", "PIDControl"]

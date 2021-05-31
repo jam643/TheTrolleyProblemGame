@@ -1,5 +1,5 @@
 from dynamics.CartesianDynamicBicycleModel import CartesianDynamicBicycleModel
-from pgutils.pgutils import *
+from utils.pgutils import *
 
 
 class CarSprite(pygame.sprite.Sprite, CartesianDynamicBicycleModel):
@@ -44,7 +44,7 @@ class CarSprite(pygame.sprite.Sprite, CartesianDynamicBicycleModel):
 
         self.image = car_image
         self.rect = self.image.get_rect(
-            center=self.glob_to_screen.get_pxl_from_glob(self.z[self.StateIdx.X], self.z[self.StateIdx.Y]))
+            center=self.glob_to_screen.get_pxl_from_glob(pygame.Vector2(self.z[self.StateIdx.X], self.z[self.StateIdx.Y])))
 
     def __repr__(self):
         return CartesianDynamicBicycleModel.__repr__(self)

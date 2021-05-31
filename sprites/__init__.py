@@ -1,2 +1,2 @@
-__all__ = ["CarSprite", "TraceSprite"]
+__all__ = ["CarSprite", "TraceSprite", "PathSprite"]
 

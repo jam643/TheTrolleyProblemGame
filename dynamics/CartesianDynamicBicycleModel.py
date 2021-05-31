@@ -1,9 +1,17 @@
 import numpy as np
 from typing import NamedTuple
 import enum
+from abc import ABC, abstractmethod
 
 
-class CartesianDynamicBicycleModel:
+class CarModel(ABC):
+    @property
+    @abstractmethod
+    def ydot(self):
+        pass
+
+
+class CartesianDynamicBicycleModel(CarModel):
     class StateIdx(enum.IntEnum):
         X = 0
         Y = 1
@@ -34,6 +42,10 @@ class CartesianDynamicBicycleModel:
     def integrate(self, u, dt):
         self.z = [self.z[idx] + dt * elem for idx, elem in enumerate(self.__zdot(self.z, u))]
 
+    @property
+    def ydot(self):
+        return self.vx * np.sin(self.z[self.StateIdx.THETA]) + self.z[self.StateIdx.VY] * np.cos(self.z[self.StateIdx.THETA])
+
     def __zdot(self, z, u):
         vy = z[self.StateIdx.VY]
         theta = z[self.StateIdx.THETA]
@@ -46,8 +58,8 @@ class CartesianDynamicBicycleModel:
         vydot = (term1 - term2) / self.params.m - self.vx * thetadot
         thetadotdot = (self.params.lf * term1 + self.params.lr * term2) / self.params.Iz
 
-        xdot = self.vx * np.cos(theta) + vy * np.sin(theta)
-        ydot = - vy * np.cos(theta) + self.vx * np.sin(theta)
+        xdot = self.vx * np.cos(theta) - vy * np.sin(theta)
+        ydot = vy * np.cos(theta) + self.vx * np.sin(theta)
 
         z_dot = [None] * len(self.StateIdx)
         z_dot[self.StateIdx.X] = xdot

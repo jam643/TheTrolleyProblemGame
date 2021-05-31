@@ -16,3 +16,5 @@ class ManualControl:
 
         if (not pressed_keys[pygame.K_LEFT]) and (not pressed_keys[pygame.K_RIGHT]):
             self.steer += -self.p_fall * self.steer
+
+        return self.steer
