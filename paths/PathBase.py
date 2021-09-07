@@ -1,12 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 import pygame
 from utils.math import Pose
 
 
 class PathBase(ABC):
+
     @abstractmethod
-    def get_nearest_coord(self, point: pygame.Vector2) -> Pose:
+    def get_pose_at_station(self, station: float) -> Pose:
+        ...
+
+    @abstractmethod
+    def get_nearest_pose(self, point: pygame.Vector2) -> Tuple[Pose, float]:
         ...
 
     @abstractmethod

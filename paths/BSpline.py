@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.interpolate as scipy_interpolate
 import pygame
-from typing import List
+from typing import List, Tuple
 from paths.PathBase import PathBase
 from utils.math import Pose
 
@@ -15,29 +15,41 @@ class BSplinePath(PathBase):
         self.coeff = coeff
 
         self.spline_list = None
+        self.spline_station = None
         self.update(points)
         self.nearest_idx = 0
 
-    def get_nearest_coord(self, point: pygame.Vector2) -> Pose:
-        prev_dist = None
-        nearest_idx = self.nearest_idx
-        for idx in range(self.nearest_idx, len(self.spline_list)):
-            dist = np.sqrt((point.x - self.spline_list[idx].x) ** 2 + (point.y - self.spline_list[idx].y) ** 2)
-            if prev_dist and (prev_dist < dist):
-                nearest_idx = idx - 1
+    def get_pose_at_station(self, station: float) -> Pose:
+        for idx, spline_station in enumerate(self.spline_station):
+            if station <= spline_station:
                 break
-            if idx == len(self.spline_list) - 1:
-                nearest_idx = idx
-            prev_dist = dist
-        self.nearest_idx = nearest_idx
-        return self.spline_list[self.nearest_idx]
 
-    def update(self, points: List[pygame.Vector2]):
+        return self.spline_list[idx]
+
+    def get_nearest_pose(self, point: pygame.Vector2) -> Tuple[Pose, float]:
+        if not self.spline_list:
+            return None, None
+        # prev_dist = None
+        # nearest_idx = 0
+        dist = [np.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2) for p in self.spline_list]
+        nearest_idx = np.argmin(dist)
+        # for idx in range(self.nearest_idx, len(self.spline_list)):
+        #     dist = np.sqrt((point.x - self.spline_list[idx].x) ** 2 + (point.y - self.spline_list[idx].y) ** 2)
+        #     if prev_dist and (prev_dist < dist):
+        #         nearest_idx = idx - 1
+        #         break
+        #     if idx == len(self.spline_list) - 1:
+        #         nearest_idx = idx
+        #     prev_dist = dist
+        self.nearest_idx = nearest_idx
+        return self.spline_list[self.nearest_idx], self.spline_station[self.nearest_idx]
+
+    def __update_spline_list(self, points: List[pygame.Vector2]):
         self.spline_list = None
         if len(points) <= 1:
             return
         elif len(points) <= self.degree:
-            self.spline_list = points
+            self.spline_list = [Pose(p.x, p.y, 0) for p in points]
             return
 
         self.nearest_idx = 0
@@ -64,7 +76,16 @@ class BSplinePath(PathBase):
 
         self.spline_list = [Pose(rx[idx], ry[idx], rtheta[idx]) for idx in range(len(rx))]
 
-        # self.spline_list = [pygame.Vector2(rx[idx], ry[idx]) for idx in range(len(rx))]
+    def update(self, points: List[pygame.Vector2]):
+        self.__update_spline_list(points)
+
+        # update spline station
+        if self.spline_list:
+            self.spline_station = [0]*len(self.spline_list)
+            for idx in range(1, len(self.spline_list)):
+                dist = np.sqrt((self.spline_list[idx].x - self.spline_list[idx-1].x)**2 + (self.spline_list[idx].y - self.spline_list[idx-1].y)**2)
+                self.spline_station[idx] = self.spline_station[idx - 1] + dist
+
 
     @property
     def path_points(self) -> List[pygame.Vector2]:

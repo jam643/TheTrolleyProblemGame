@@ -2,12 +2,15 @@ import numpy as np
 from typing import NamedTuple
 import enum
 from abc import ABC, abstractmethod
+import pygame
+
+import utils.math as math
 
 
 class CarModel(ABC):
     @property
     @abstractmethod
-    def ydot(self):
+    def vel(self):
         pass
 
 
@@ -43,8 +46,22 @@ class CartesianDynamicBicycleModel(CarModel):
         self.z = [self.z[idx] + dt * elem for idx, elem in enumerate(self.__zdot(self.z, u))]
 
     @property
-    def ydot(self):
-        return self.vx * np.sin(self.z[self.StateIdx.THETA]) + self.z[self.StateIdx.VY] * np.cos(self.z[self.StateIdx.THETA])
+    def vel(self):
+        theta = self.z[self.StateIdx.THETA]
+        return math.Point(self.vx * np.cos(theta) - self.z[self.StateIdx.VY] * np.sin(theta),
+                          self.vx * np.sin(theta) + self.z[self.StateIdx.VY] * np.cos(theta))
+
+    @property
+    def pose(self):
+        return math.Pose(self.z[self.StateIdx.X], self.z[self.StateIdx.Y], self.z[self.StateIdx.THETA])
+
+    @property
+    def pose_rear_axle(self):
+        return math.add_body_frame(self.pose, math.Pose(-self.params.lr, 0, 0))
+
+    @property
+    def coord(self):
+        return math.Point(self.z[self.StateIdx.X], self.z[self.StateIdx.Y])
 
     def __zdot(self, z, u):
         vy = z[self.StateIdx.VY]

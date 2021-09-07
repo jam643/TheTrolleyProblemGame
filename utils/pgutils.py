@@ -5,9 +5,15 @@ from typing import List, overload
 from multipledispatch import dispatch
 
 # --- Globals ---
-BLACK = (0, 0, 0)
+import utils.math
+
+COLOR1 = (20, 50, 76)
+COLOR3 = (141, 105, 122)
+COLOR4 = (84, 78, 104)
+COLOR7 = (255, 212, 163)
+COLOR8 = (255, 236, 214)
 WHITE = (255, 255, 255)
-BLUE = (0, 0, 70)
+BLACK = (0, 0, 0)
 
 SCREEN_WIDTH = 1800
 SCREEN_HEIGHT = 1000
@@ -33,10 +39,13 @@ class GlobToScreen:
     def get_pxl_from_glob(self, points):
         if type(points) is list:
             return [pygame.Vector2(point.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
-                               -point.y * self.pxl_per_mtr + self.y_pxl_rel_glob) for point in points]
+                                   -point.y * self.pxl_per_mtr + self.y_pxl_rel_glob) for point in points]
+        elif type(points) is utils.math.Point:
+            return pygame.Vector2(points.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
+                                  -points.y * self.pxl_per_mtr + self.y_pxl_rel_glob)
         elif type(points) is pygame.Vector2:
             return pygame.Vector2(points.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
-                              -points.y * self.pxl_per_mtr + self.y_pxl_rel_glob)
+                                  -points.y * self.pxl_per_mtr + self.y_pxl_rel_glob)
         else:
             raise AttributeError
 
@@ -63,9 +72,11 @@ class GlobToScreen:
         return self.play_speed / self.fps
 
 
-def rot_and_transl(surf: pygame.Surface, image: pygame.Surface, angle: float, x: float, y: float) -> pygame.Surface:
-    image_rot = pygame.transform.rotate(image, angle * 180 / np.pi)
+def rot_and_transl(surf: pygame.Surface, image: pygame.Surface, angle: float, x: float, y: float,
+                   special_flags=0) -> pygame.Surface:
+    # image_rot = pygame.transform.rotate(image, angle * 180 / np.pi)
+    image_rot = image
     surf.blit(image_rot, (
         -image_rot.get_rect().centerx + surf.get_rect().centerx + x,
-        -image_rot.get_rect().centery + surf.get_rect().centery + y))
+        -image_rot.get_rect().centery + surf.get_rect().centery + y), special_flags=special_flags)
     return surf
