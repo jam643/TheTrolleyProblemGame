@@ -33,11 +33,11 @@ class CartesianDynamicBicycleModel(CarModel):
         cf: float  # Front cornering stiffness[N / rad]
         cr: float  # Rear cornering stiffness[N / rad]
 
-    def __init__(self):
-        self.params = self.Params(m=1915, Iz=4235, lf=1.453, lr=1.522, cf=90000, cr=116000)
+    def __init__(self, pose_init: math.Pose):
+        self.params = self.Params(m=1915, Iz=4235, lf=1.5, lr=1.5, cf=90000, cr=116000)
         self.vx = 10
 
-        self.z = [0, 10, 0, 0, 0]
+        self.z = [pose_init.x, pose_init.y, 0, pose_init.theta, 0]
 
     def __repr__(self):
         return 'State[x={:.2f}, y={:.2f}, vy={:.2f}, theta={:.2f}, thetadot={:.2f}]'.format(*self.z)
@@ -58,6 +58,10 @@ class CartesianDynamicBicycleModel(CarModel):
     @property
     def pose_rear_axle(self):
         return math.add_body_frame(self.pose, math.Pose(-self.params.lr, 0, 0))
+
+    @property
+    def pose_front_axle(self):
+        return math.add_body_frame(self.pose, math.Pose(self.params.lf, 0, 0))
 
     @property
     def coord(self):

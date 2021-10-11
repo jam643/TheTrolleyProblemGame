@@ -1,5 +1,5 @@
 from paths.PathBase import PathBase
-from utils.pgutils import *
+from utils.pgutils.pgutils import *
 import math
 
 
@@ -9,7 +9,6 @@ class PathSprite:
         self.path = path
 
         self.last_pose = []
-        self.drawing = False
         self.spline_timer = pygame.time.get_ticks()
         self.spline_update = 50
         self.mouse_position = None
@@ -37,17 +36,11 @@ class PathSprite:
                   enumerate(path_pose_global[:peak])]
             l3.reverse()
             l4.reverse()
-            # screen2 = pygame.Surface(screen.get_size())
-            pygame.draw.lines(screen, COLOR4, False, l1 + l2 + l3 + l4, width=2)
-            # pygame.draw.lines(screen2, (20, 20, 20), False, l1 + l2 + l3 + l4, width=15)
-            # screen.blit(screen2, screen2.get_rect(), special_flags=pygame.BLEND_RGB_ADD)
-            # steps = 50
-            # len_path = len(self.path.path_points)
-            # for i in range(steps):
-            #     pygame.draw.lines(screen, WHITE, False, self.glob_to_screen.get_pxl_from_glob(
-            #         self.path.path_points[math.floor(i / steps * len_path):math.ceil((i+1) / steps * len_path)]), width=i)
 
-    def update(self, events):
+            pygame.draw.lines(screen, COLOR4, False, l1 + l2 + l3 + l4, width=2)
+
+
+    def update(self):
         # todo clean up logic
 
         self.mouse_position = pygame.Vector2(pygame.mouse.get_pos())

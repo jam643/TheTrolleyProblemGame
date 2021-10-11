@@ -1,6 +1,6 @@
 import pygame
 
-from utils.pgutils import *
+from utils.pgutils.pgutils import *
 
 
 class TraceSprite(object):

@@ -1,7 +1,8 @@
 #!/usr/bin/env pipenv-shebang
 
 from profilehooks import profile
-from scenes.Scenes import *
+# from scenes.Scenes import *
+from scenes import StartScene
 import pygame
 
 
@@ -11,10 +12,10 @@ def main():
     pygame.init()
 
     # Set the title of the window
-    pygame.display.set_caption('Project')
+    pygame.display.set_caption('The Trolley Problem Game')
 
     flags = pygame.FULLSCREEN
-    active_scene = PurePursuiteDrivingScene(pygame.display.set_mode((0, 0), flags=flags))
+    active_scene = StartScene.StartScene(pygame.display.set_mode((1700, 800)))
 
     while active_scene is not None:
         # process inputs
@@ -26,12 +27,7 @@ def main():
 
         # render
         active_scene.render()
-
         pygame.display.flip()
-
-        # metrics
-        # print('screen refresh [ms]: {:.1f}'.format(1000. / (clock.get_fps() + 0.1)))
-        # print('exec time [ms]: {:.1f}'.format(pygame.time.get_ticks() - start_time))
 
         # Pause
         active_scene.clock.tick(active_scene.glob_to_screen.fps)

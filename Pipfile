@@ -11,7 +11,7 @@ pygame = "*"
 scipy = "*"
 profilehooks = "*"
 matplotlib = "*"
-multipledispatch = "*"
+pygame-menu = "*"
 
 [requires]
 python_version = "3.7"

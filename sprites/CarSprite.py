@@ -1,11 +1,16 @@
+import pygame
+from pygame import gfxdraw
+import numpy as np
+
 from dynamics.CartesianDynamicBicycleModel import CartesianDynamicBicycleModel
-from utils.pgutils import *
+import utils.pgutils.pgutils as pgutils
+import utils.math as math
 
 
 class CarSprite(pygame.sprite.Sprite, CartesianDynamicBicycleModel):
-    def __init__(self, glob_to_screen: GlobToScreen):
+    def __init__(self, pose_init: math.Pose, glob_to_screen: pgutils.GlobToScreen):
         pygame.sprite.Sprite.__init__(self)
-        CartesianDynamicBicycleModel.__init__(self)
+        CartesianDynamicBicycleModel.__init__(self, pose_init)
 
         self.car_width = 1.2 * self.params.lf
 
@@ -14,70 +19,100 @@ class CarSprite(pygame.sprite.Sprite, CartesianDynamicBicycleModel):
         self.image = None
         self.rect = None
 
-        self.tire_len = 1.0 * self.glob_to_screen.pxl_per_mtr
-        self.tire_width = 0.3 * self.glob_to_screen.pxl_per_mtr
-        self.tire_image = pygame.Surface([self.tire_len, self.tire_width],
-                                         pygame.SRCALPHA, 32)
-        tire_pnts = [(0., 0.), (self.tire_len, 0.), (self.tire_len, self.tire_width), (0., self.tire_width)]
-        pygame.draw.polygon(self.tire_image, COLOR8, tire_pnts)
+        self.tire_len = 1.0
+        self.tire_width = 0.3
+        # self.tire_image = pygame.Surface([self.tire_len, self.tire_width],
+        #                                  pygame.SRCALPHA, 32)
+        self.tire_pnts = [(-self.tire_len / 2., -self.tire_width / 2), (self.tire_len / 2, -self.tire_width / 2),
+                          (self.tire_len / 2, self.tire_width / 2), (-self.tire_len / 2, self.tire_width / 2)]
+        # pygame.draw.polygon(self.tire_image, COLOR8, self.tire_pnts)
 
-    def build_car_img(self, steer: float):
-        car_image = pygame.Surface([(self.params.lr + self.params.lf + self.tire_len) * self.glob_to_screen.pxl_per_mtr,
-                                    (self.car_width + self.tire_len) * self.glob_to_screen.pxl_per_mtr],
-                                   pygame.SRCALPHA,
-                                   32)
-        # car_image.set_alpha(200)
-        # car_image = car_image.convert_alpha()
         chassis_pnts = [(0, 0), (-self.params.lr, -self.car_width / 2), (-self.params.lr, self.car_width / 2), (0, 0),
                         (self.params.lf, -self.car_width / 2), (1.6 * self.params.lf, 0),
                         (self.params.lf, self.car_width / 2)]
-        chassis_pnts = [(p[0] * self.glob_to_screen.pxl_per_mtr + car_image.get_rect().centerx,
-                         p[1] * self.glob_to_screen.pxl_per_mtr + car_image.get_rect().centery) for p in chassis_pnts]
-        car_image = rot_and_transl(car_image, self.tire_image, 0, -self.params.lr * self.glob_to_screen.pxl_per_mtr,
-                                   self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
-        car_image = rot_and_transl(car_image, self.tire_image, 0, -self.params.lr * self.glob_to_screen.pxl_per_mtr,
-                                   -self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
-        car_image = rot_and_transl(car_image, self.tire_image, steer, self.params.lf * self.glob_to_screen.pxl_per_mtr,
-                                   self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
-        car_image = rot_and_transl(car_image, self.tire_image, steer, self.params.lf * self.glob_to_screen.pxl_per_mtr,
-                                   -self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
-        chassis_surf = pygame.Surface(
-            [(self.params.lr + self.params.lf + self.tire_len) * self.glob_to_screen.pxl_per_mtr,
-             (self.car_width + self.tire_len) * self.glob_to_screen.pxl_per_mtr],
-            pygame.SRCALPHA,
-            32)
-        # chassis_surf.set_alpha(200)
-        # chassis_surf = chassis_surf.convert_alpha()
-        pygame.draw.polygon(chassis_surf, COLOR7, chassis_pnts)
-        car_image = rot_and_transl(car_image, chassis_surf, 0, 0, 0)
-        # car_image = car_image.convert_alpha()  # make transparent background
 
-        # mask = pygame.mask.from_surface(car_image)
-        # shadow_image = mask.to_surface(setcolor=(1,1,1))
-        # shadow_image.set_colorkey(BLACK)
-        # # shadow_image.convert_alpha()
-        # shadow_image.set_alpha(155)
-        # shadow_image = shadow_image.convert_alpha()
-        # # shadow_image = rot_and_transl(car_image, shadow_image, 0, 4, 4, special_flags=pygame.BLEND_RGB_SUB)
-        #
-        # car_image2 = pygame.Surface([(self.params.lr + self.params.lf + self.tire_len) * self.glob_to_screen.pxl_per_mtr,
-        #                             (self.car_width + self.tire_len) * self.glob_to_screen.pxl_per_mtr],
-        #                            pygame.SRCALPHA,
-        #                            32)
-        # car_image2 = car_image2.convert_alpha()
-        # car_image2 = rot_and_transl(car_image2, shadow_image, 0, -8, 6)
-        # car_image2 = rot_and_transl(car_image2, car_image, 0, 0, 0)
-        return car_image
+        self.polygon_list_base = [math.trans_rot(math.Point.from_list(self.tire_pnts), -self.params.lr,
+                                            self.car_width / 2 - self.tire_width / 2, 0),
+                             math.trans_rot(math.Point.from_list(self.tire_pnts), -self.params.lr,
+                                            -(self.car_width / 2 - self.tire_width / 2), 0),
+                             chassis_pnts]
+        # pgutils.draw_polygons(self.car_image_base, polygon_list, [pgutils.COLOR8, pgutils.COLOR8, pgutils.COLOR7],
+        #                       self.glob_to_screen)
+
+        # pygame.draw.polygon(self.car_image, pgutils.COLOR7, chassis_pnts)
+
+    def build_car_img(self, steer: float):
+        polygon_list = []
+        polygon_list.append(math.trans_rot(math.Point.from_list(self.tire_pnts), self.params.lf,
+                           self.car_width / 2 - self.tire_width / 2,
+                           -steer))
+        polygon_list.append(math.trans_rot(math.Point.from_list(self.tire_pnts), self.params.lf,
+                           -(self.car_width / 2 - self.tire_width / 2),
+                           -steer))
+        polygon_list = polygon_list + self.polygon_list_base
+
+        return polygon_list
+
+    #     # car_image.set_alpha(200)
+    #     # car_image = car_image.convert_alpha()
+    #
+    #     # car_image = rot_and_transl(car_image, self.tire_image, 0, -self.params.lr * self.glob_to_screen.pxl_per_mtr,
+    #     #                            self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
+    #     # car_image = rot_and_transl(car_image, self.tire_image, 0, -self.params.lr * self.glob_to_screen.pxl_per_mtr,
+    #     #                            -self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
+    #     # car_image = rot_and_transl(car_image, self.tire_image, steer, self.params.lf * self.glob_to_screen.pxl_per_mtr,
+    #     #                            self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
+    #     # car_image = rot_and_transl(car_image, self.tire_image, steer, self.params.lf * self.glob_to_screen.pxl_per_mtr,
+    #     #                            -self.car_width * self.glob_to_screen.pxl_per_mtr / 2)
+    #     # chassis_surf = pygame.Surface(
+    #     #     [(self.params.lr + self.params.lf) * self.glob_to_screen.pxl_per_mtr + self.tire_len,
+    #     #      (self.car_width) * self.glob_to_screen.pxl_per_mtr + self.tire_len],
+    #     #     pygame.SRCALPHA,
+    #     #     32)
+    #     # chassis_surf.set_alpha(200)
+    #     # chassis_surf = chassis_surf.convert_alpha()
+    #     # pygame.draw.polygon(chassis_surf, COLOR7, chassis_pnts)
+    #     # car_image = rot_and_transl(car_image, chassis_surf, 0, 0, 0)
+    #     # car_image = car_image.convert_alpha()  # make transparent background
+    #
+    #     # mask = pygame.mask.from_surface(car_image)
+    #     # shadow_image = mask.to_surface(setcolor=(1,1,1))
+    #     # shadow_image.set_colorkey(BLACK)
+    #     # # shadow_image.convert_alpha()
+    #     # shadow_image.set_alpha(155)
+    #     # shadow_image = shadow_image.convert_alpha()
+    #     # # shadow_image = rot_and_transl(car_image, shadow_image, 0, 4, 4, special_flags=pygame.BLEND_RGB_SUB)
+    #     #
+    #     # car_image2 = pygame.Surface([(self.params.lr + self.params.lf + self.tire_len) * self.glob_to_screen.pxl_per_mtr,
+    #     #                             (self.car_width + self.tire_len) * self.glob_to_screen.pxl_per_mtr],
+    #     #                            pygame.SRCALPHA,
+    #     #                            32)
+    #     # car_image2 = car_image2.convert_alpha()
+    #     # car_image2 = rot_and_transl(car_image2, shadow_image, 0, -8, 6)
+    #     # car_image2 = rot_and_transl(car_image2, car_image, 0, 0, 0)
+    #     return car_image
 
     def draw(self, screen):
+        screen.blit(self.car_shadow_image, self.car_shadow_rect)
         screen.blit(self.image, self.rect)
 
     def update(self, steer: float, dt: float):
         self.integrate([steer], dt)
 
         # graphics
-        car_image = self.build_car_img(steer)
+        car_image = pygame.Surface(
+            [1.1*(self.params.lr + self.params.lf + self.tire_len) * self.glob_to_screen.pxl_per_mtr,
+             (self.car_width + self.tire_len) * self.glob_to_screen.pxl_per_mtr], pygame.SRCALPHA, 32)
+        car_shadow_image = car_image.copy()
+        car_shadow_image.set_alpha(100)
+        pgutils.draw_polygons(car_image, self.build_car_img(steer), [pgutils.COLOR8]*4 + [pgutils.COLOR7],
+                              self.glob_to_screen)
+        pgutils.draw_polygons(car_shadow_image, self.build_car_img(steer), [pgutils.BLACK]*5,
+                              self.glob_to_screen)
         car_image = pygame.transform.rotate(car_image, self.z[self.StateIdx.THETA] * 180 / np.pi)
+        self.car_shadow_image = pygame.transform.rotate(car_shadow_image, self.z[self.StateIdx.THETA] * 180 / np.pi)
+        self.car_shadow_rect = self.car_shadow_image.get_rect(center=self.glob_to_screen.get_pxl_from_glob(
+                pygame.Vector2(self.z[self.StateIdx.X]-0.3, self.z[self.StateIdx.Y]-0.5)))
 
         self.image = car_image
         self.rect = self.image.get_rect(
