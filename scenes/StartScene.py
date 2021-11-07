@@ -18,7 +18,7 @@ class StartScene(SceneBase):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 50
 
-        self.control_factory = ControlFactory(glob_to_screen=self.glob_to_screen)
+        self.control_factory = ControlFactory(glob_to_screen=self.glob_to_screen, screen=self.screen, cont_type=ControlType.pure_pursuit)
         self.menu = menu_default(self.screen, theme_default(50), enabled=True)
 
         def sandbox_callback():
@@ -36,7 +36,6 @@ class StartScene(SceneBase):
 
         self.steer = None
         self.scroll_speed = 10
-        self.control = self.control_factory.create_control(ControlType.pure_pursuit)
         self.speed_control = SpeedControl.SpeedControl(station_setpoint=21)
 
     def process_input(self, events, pressed_keys):
@@ -46,7 +45,7 @@ class StartScene(SceneBase):
     def update(self):
         self.path_sprite.update(self.get_time_s())
         self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt
-        self.steer = self.control.update(self.car_sprite, self.path_sprite.path)
+        self.steer = self.control_factory.control.update(self.car_sprite, self.path_sprite.path)
         self.car_sprite.vx = self.speed_control.update(self.car_sprite, self.path_sprite.path,
                                                        self.glob_to_screen.sim_dt)
         self.car_sprite.update(self.steer, self.glob_to_screen.sim_dt)

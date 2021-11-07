@@ -13,7 +13,7 @@ class PurePursuitControl(ControllerBase):
         lookahead_k: float
 
     def __init__(self, params: Params):
-        self.params = params
+        self.set_params(params)
         self.nearest_pose = math.Pose(0, 0, 0)
         self.steer_cont = 0
         self.lookahead_pose = math.Pose(0, 0, 0)
@@ -21,6 +21,9 @@ class PurePursuitControl(ControllerBase):
         self.alpha = 0
         self.radius = 0
         self.car_rear_axle = None
+
+    def set_params(self, params: Params):
+        self.params = params
 
     def update(self, car: CartesianDynamicBicycleModel, path: PathBase) -> float:
         if not path:

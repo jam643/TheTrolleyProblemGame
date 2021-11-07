@@ -8,3 +8,6 @@ class ControllerBase(ABC):
     @abstractmethod
     def update(self, car: CartesianDynamicBicycleModel, path: PathBase) -> float:
         ...
+
+    def set_params(self, params):
+        ...

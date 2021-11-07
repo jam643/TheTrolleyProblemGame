@@ -20,21 +20,16 @@ class SandboxScene(SceneBase):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 40
+        self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.pure_pursuit)
 
-        self.menu = menu_default(self.screen, theme_default(30))
-        self.controller_menu = menu_default(self.screen, theme_default(30))
-        self.path_menu = menu_default(self.screen, theme_default(30))
+        self.menu = menu_default(self.screen, theme_default(20), columns=3, rows=5)
+        self.path_menu = menu_default(self.screen, theme_default(20))
 
         self.path_menu.add.toggle_switch("AUTO GEN PATH", state_text=("OFF", "ON"),
                                          onchange=self._enable_auto_gen_path_callback)
         self.path_menu.add.button("BACK", pygame_menu.events.BACK)
 
-        self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
-                                                     ("STANLEY", ControlType.stanley)], default=0,
-                                            onchange=self._change_control_callback)
-        self.controller_menu.add.button("BACK", pygame_menu.events.BACK)
-
-        self.menu.add.button("CONTROLLER", self.controller_menu)
+        self.menu.add.button("CONTROLLER", self.control_factory.controller_menu)
         self.menu.add.button("PATH", self.path_menu)
         self.menu.add.toggle_switch("VISUALIZATIONS", state_text=("OFF", "ON"), onchange=self._enable_algo_viz_callback,
                                     default=1)
@@ -42,7 +37,7 @@ class SandboxScene(SceneBase):
         def start_scene_callback(): self.next = StartScene.StartScene(self.screen)
 
         self.menu.add.button("MAIN MENU", start_scene_callback)
-        ret_button = self.menu.add.button("RETURN", pygame_menu.events.CLOSE)
+        self.menu.add.button("RETURN", pygame_menu.events.CLOSE)
         self.is_enable_algo_viz = True
         self.is_auto_gen_path = False
 
@@ -54,8 +49,6 @@ class SandboxScene(SceneBase):
 
         self.steer = None
         self.scroll_speed = 12
-        self.control_factory = ControlFactory(self.glob_to_screen)
-        self.control = self.control_factory.create_control(ControlType.pure_pursuit)
         self.speed_control = SpeedControl.SpeedControl(station_setpoint=25)
         self.trace_sprite = TraceSprite(self.glob_to_screen)
 
@@ -80,7 +73,7 @@ class SandboxScene(SceneBase):
                 self.path_sprite.update()
 
             self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt
-            self.steer = self.control.update(self.car_sprite, self.path_sprite.path)
+            self.steer = self.control_factory.control.update(self.car_sprite, self.path_sprite.path)
             self.car_sprite.vx = self.speed_control.update(self.car_sprite, self.path_sprite.path,
                                                            self.glob_to_screen.sim_dt)
             self.car_sprite.update(self.steer, self.glob_to_screen.sim_dt)
@@ -94,7 +87,7 @@ class SandboxScene(SceneBase):
         self.path_sprite.draw(self.screen)
         self.car_sprite.draw(self.screen)
         if self.is_enable_algo_viz:
-            self.control.draw(self.screen)
+            self.control_factory.control.draw(self.screen)
 
         if self.menu.is_enabled():
             self.menu.draw(self.screen)
@@ -119,6 +112,3 @@ class SandboxScene(SceneBase):
                                               self.screen.get_height())
         else:
             self.path_sprite = PathSprite(BSplinePath([], 20, 3, 0, 1), self.glob_to_screen)
-
-    def _change_control_callback(self, _, type):
-        self.control = self.control_factory.create_control(type)

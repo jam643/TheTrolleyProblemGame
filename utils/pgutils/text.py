@@ -15,10 +15,10 @@ def theme_default(font_size: int) -> pygame_menu.Theme:
                              title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_NONE, title_close_button=False)
 
 
-def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, enabled: bool = False) -> pygame_menu.Menu:
+def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, enabled: bool = False, **kwargs) -> pygame_menu.Menu:
     return pygame_menu.Menu("", width=0.8 * screen.get_width(), height=0.8 * screen.get_height(),
                             theme=theme, mouse_motion_selection=True, onclose=pygame_menu.events.RESET,
-                            enabled=enabled)
+                            enabled=enabled, **kwargs)
 
 
 class HorAlign(Enum):

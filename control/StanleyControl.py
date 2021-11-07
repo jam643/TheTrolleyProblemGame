@@ -13,13 +13,16 @@ class StanleyControl(ControllerBase):
         k: float
 
     def __init__(self, params: Params):
-        self.params = params
+        self.set_params(params)
 
         self.nearest_pose = math.Pose(0, 0, 0)
         self.steer_cont = 0
         self.car_front_axle = None
         self.cte = None
         self.path_unit_normal = None
+
+    def set_params(self, params: Params):
+        self.params = params
 
     def update(self, car: CartesianDynamicBicycleModel, path: PathBase) -> float:
         if not path:
