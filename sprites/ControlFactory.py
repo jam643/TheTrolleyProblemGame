@@ -32,7 +32,7 @@ class StanleyControlBuilder(ControlBuilderInterface):
         self._params = StanleyControl.Params(1.0)
         self._control = StanleyControlSprite(self._params, glob_to_screen)
 
-        self._menu = menu_default(screen, theme_default(20))
+        self._menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
         self._menu.add.range_slider("K", self._params.k, (0, 5), 0.05, onchange=self._k_callback)
         self._menu.add.button("BACK", pygame_menu.events.BACK)
 
@@ -54,7 +54,7 @@ class PurePursuitBuilder(ControlBuilderInterface):
         self._params = PurePursuitControl.Params(0.7)
         self._control = PurePursuitSprite(self._params, glob_to_screen)
 
-        self._menu = menu_default(screen, theme_default(20))
+        self._menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
         self._menu.add.range_slider("LOOKAHEAD K", self._params.lookahead_k, (0, 5), 0.05,
                                    onchange=self._lookahead_k_callback)
         self._menu.add.button("BACK", pygame_menu.events.BACK)
@@ -79,7 +79,7 @@ class ControlFactory:
 
         self._current_control_type = cont_type
 
-        self.controller_menu = menu_default(screen, theme_default(20))
+        self.controller_menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
         self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
                                                      ("STANLEY", ControlType.stanley)], default=cont_type.value,
                                             onchange=self._change_control_callback)

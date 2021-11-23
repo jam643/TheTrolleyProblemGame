@@ -28,6 +28,12 @@ class Point:
         if idx is 1:
             return self.y
 
+    def __add__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Point(self.x - other.x, self.y - other.y)
+
 
 @dataclass
 class Pose(Point):

@@ -26,7 +26,7 @@ class PurePursuitSprite(PurePursuitControl):
         center = self.glob_to_screen.get_pxl_from_glob(
             math.add_body_frame(self.car_rear_axle, math.Pose(0, self.radius, 0)).to_vect2())
         rad = int(abs(self.radius) * self.glob_to_screen.pxl_per_mtr)
-        if -1000 < rad < 1000:
+        if -2e3 < rad < 2e3:
             if self.radius > 0:
                 arc_angles = np.array(
                     [-self.car_rear_axle.theta - 2 * self.alpha, -self.car_rear_axle.theta]) + np.pi / 2

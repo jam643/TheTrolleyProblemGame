@@ -8,17 +8,21 @@ from utils.pgutils.pgutils import *
 game_font = os.path.join("utils/pgutils/pixelFont.ttf")
 
 
-def theme_default(font_size: int) -> pygame_menu.Theme:
+def theme_default(font_size: int, **kwargs) -> pygame_menu.Theme:
     return pygame_menu.Theme(background_color=(0, 0, 0, 0), widget_font=game_font,
                              widget_background_color=(0, 0, 0, 0),
                              widget_font_color=COLOR6, widget_font_size=font_size,
-                             title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_NONE, title_close_button=False)
+                             title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_NONE, title_close_button=False, **kwargs)
 
 
-def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, enabled: bool = False, **kwargs) -> pygame_menu.Menu:
-    return pygame_menu.Menu("", width=0.8 * screen.get_width(), height=0.8 * screen.get_height(),
+def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, width=None, height=None, enabled: bool = False, **kwargs) -> pygame_menu.Menu:
+    if not width:
+        width=screen.get_width()
+    if not height:
+        height=screen.get_height()
+    return pygame_menu.Menu("",
                             theme=theme, mouse_motion_selection=True, onclose=pygame_menu.events.RESET,
-                            enabled=enabled, **kwargs)
+                            enabled=enabled, width=width, height=height, **kwargs)
 
 
 class HorAlign(Enum):

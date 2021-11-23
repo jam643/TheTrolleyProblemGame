@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 
-from dynamics.CartesianDynamicBicycleModel import CartesianDynamicBicycleModel
+from dynamics.CartesianDynamicBicycleModel import Vehicle
 from paths.PathBase import PathBase
 from control.ControllerBase import ControllerBase
 import utils.math as math
@@ -25,13 +25,13 @@ class PurePursuitControl(ControllerBase):
     def set_params(self, params: Params):
         self.params = params
 
-    def update(self, car: CartesianDynamicBicycleModel, path: PathBase) -> float:
+    def update(self, car: Vehicle, path: PathBase) -> float:
         if not path:
             return self.steer_cont
         self.nearest_pose, station = path.get_nearest_pose(car.pose_rear_axle)
         if self.nearest_pose:
-            self.lookahead_pose = path.get_pose_at_station(station + car.vx * self.params.lookahead_k)
-            lookahead_in_car_frame = math.rot(math.diff(self.lookahead_pose, car.pose), -car.pose.theta)
+            self.lookahead_pose = path.get_pose_at_station(station + car.state_cog.vx * self.params.lookahead_k)
+            lookahead_in_car_frame = math.rot(math.diff(self.lookahead_pose, car.pose_rear_axle), -car.pose.theta)
             self.alpha = np.arctan2(lookahead_in_car_frame.y, lookahead_in_car_frame.x)
 
             self.car_rear_axle = car.pose_rear_axle

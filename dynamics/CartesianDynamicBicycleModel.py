@@ -1,20 +1,12 @@
 import numpy as np
-from typing import NamedTuple
 import enum
-from abc import ABC, abstractmethod
-import pygame
+from typing import List, Callable
 
-import utils.math as math
-
-
-class CarModel(ABC):
-    @property
-    @abstractmethod
-    def vel(self):
-        pass
+from dynamics.Vehicle import Vehicle
+from dynamics.motion_model_base import MotionModel
 
 
-class CartesianDynamicBicycleModel(CarModel):
+class CartesianDynamicBicycleModel(MotionModel):
     class StateIdx(enum.IntEnum):
         X = 0
         Y = 1
@@ -22,71 +14,65 @@ class CartesianDynamicBicycleModel(CarModel):
         THETA = 3
         THETADOT = 4
 
-    class ControlIdx(enum.IntEnum):
-        STEER = 0
+    class CtrlIdx(enum.IntEnum):
+        VX = 0
+        STEER = 1
 
-    class Params(NamedTuple):
-        m: float  # Mass[kg]
-        Iz: float  # Yaw inertia[kg * m ^ 2]
-        lf: float  # Distance from CG to front axle[m]
-        lr: float  # Distance from CG to rear axle[m]
-        cf: float  # Front cornering stiffness[N / rad]
-        cr: float  # Rear cornering stiffness[N / rad]
+    @staticmethod
+    def _state_to_vehicle(z, u, _) -> Vehicle.State:
+        state_idx = CartesianDynamicBicycleModel.StateIdx
+        ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
+        return Vehicle.State(x=z[state_idx.X], y=z[state_idx.Y], theta=z[state_idx.THETA],
+                                                     vx=u[ctrl_idx.VX],
+                                                     vy=z[state_idx.VY], delta=u[ctrl_idx.STEER],
+                                                     thetadot=z[state_idx.THETADOT])
 
-    def __init__(self, pose_init: math.Pose):
-        self.params = self.Params(m=1915, Iz=4235, lf=1.5, lr=1.5, cf=90000, cr=116000)
-        self.vx = 10
+    @staticmethod
+    def _vehicle_to_state(vehicle_state_cog: Vehicle.State) -> List:
+        state_idx = CartesianDynamicBicycleModel.StateIdx
+        z = [0.0] * len(state_idx)
+        z[state_idx.X] = vehicle_state_cog.x
+        z[state_idx.Y] = vehicle_state_cog.y
+        z[state_idx.VY] = vehicle_state_cog.vy
+        z[state_idx.THETA] = vehicle_state_cog.theta
+        z[state_idx.THETADOT] = vehicle_state_cog.thetadot
+        return z
 
-        self.z = [pose_init.x, pose_init.y, 0, pose_init.theta, 0]
+    @staticmethod
+    def _to_ctrl(steer, vel) -> List:
+        ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
+        u = [0.0] * len(ctrl_idx)
+        u[ctrl_idx.STEER] = steer
+        u[ctrl_idx.VX] = vel
+        return u
 
-    def __repr__(self):
-        return 'State[x={:.2f}, y={:.2f}, vy={:.2f}, theta={:.2f}, thetadot={:.2f}]'.format(*self.z)
+    @staticmethod
+    def _eqn_of_motn(z: List, u: List, p: Vehicle.Params):
+        state_idx = CartesianDynamicBicycleModel.StateIdx
+        ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
 
-    def integrate(self, u, dt):
-        self.z = [self.z[idx] + dt * elem for idx, elem in enumerate(self.__zdot(self.z, u))]
+        # unpack state
+        vy = z[state_idx.VY]
+        theta = z[state_idx.THETA]
+        thetadot = z[state_idx.THETADOT]
 
-    @property
-    def vel(self):
-        theta = self.z[self.StateIdx.THETA]
-        return math.Point(self.vx * np.cos(theta) - self.z[self.StateIdx.VY] * np.sin(theta),
-                          self.vx * np.sin(theta) + self.z[self.StateIdx.VY] * np.cos(theta))
+        # unpack control
+        vx = u[ctrl_idx.VX]
+        delta = u[ctrl_idx.STEER]
 
-    @property
-    def pose(self):
-        return math.Pose(self.z[self.StateIdx.X], self.z[self.StateIdx.Y], self.z[self.StateIdx.THETA])
+        term1 = -p.cf * (np.arctan((vy + p.lf * thetadot) / vx) - delta) * np.cos(delta)
+        term2 = p.cr * np.arctan((vy - p.lr * thetadot) / vx)
+        vydot = (term1 - term2) / p.m - vx * thetadot
+        thetadotdot = (p.lf * term1 + p.lr * term2) / p.Iz
 
-    @property
-    def pose_rear_axle(self):
-        return math.add_body_frame(self.pose, math.Pose(-self.params.lr, 0, 0))
+        xdot = vx * np.cos(theta) - vy * np.sin(theta)
+        ydot = vy * np.cos(theta) + vx * np.sin(theta)
 
-    @property
-    def pose_front_axle(self):
-        return math.add_body_frame(self.pose, math.Pose(self.params.lf, 0, 0))
-
-    @property
-    def coord(self):
-        return math.Point(self.z[self.StateIdx.X], self.z[self.StateIdx.Y])
-
-    def __zdot(self, z, u):
-        vy = z[self.StateIdx.VY]
-        theta = z[self.StateIdx.THETA]
-        thetadot = z[self.StateIdx.THETADOT]
-
-        delta = u[self.ControlIdx.STEER]
-
-        term1 = -self.params.cf * (np.arctan((vy + self.params.lf * thetadot) / self.vx) - delta) * np.cos(delta)
-        term2 = self.params.cr * np.arctan((vy - self.params.lr * thetadot) / self.vx)
-        vydot = (term1 - term2) / self.params.m - self.vx * thetadot
-        thetadotdot = (self.params.lf * term1 + self.params.lr * term2) / self.params.Iz
-
-        xdot = self.vx * np.cos(theta) - vy * np.sin(theta)
-        ydot = vy * np.cos(theta) + self.vx * np.sin(theta)
-
-        z_dot = [None] * len(self.StateIdx)
-        z_dot[self.StateIdx.X] = xdot
-        z_dot[self.StateIdx.Y] = ydot
-        z_dot[self.StateIdx.VY] = vydot
-        z_dot[self.StateIdx.THETA] = thetadot
-        z_dot[self.StateIdx.THETADOT] = thetadotdot
+        z_dot = [None] * len(state_idx)
+        z_dot[state_idx.X] = xdot
+        z_dot[state_idx.Y] = ydot
+        z_dot[state_idx.VY] = vydot
+        z_dot[state_idx.THETA] = thetadot
+        z_dot[state_idx.THETADOT] = thetadotdot
 
         return z_dot

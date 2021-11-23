@@ -82,12 +82,12 @@ class GlobToScreen:
         return self.play_speed / self.fps
 
 
-def draw_polygons(surf: pygame.Surface, polygon_list: List[List[Tuple[float, float]]], colors: List[pygame.Color],
+def draw_polygons(surf: pygame.Surface, polygon_list: List[List[Tuple[float, float]]], cog_pose: math.Point, colors: List[pygame.Color],
                   glob_to_screen: GlobToScreen):
-    centerx = surf.get_rect().centerx
-    centery = surf.get_rect().centery
+    # centerx = surf.get_rect().centerx
+    # centery = surf.get_rect().centery
     for idx, poly in enumerate(polygon_list):
-        poly_transf = [(p[0] * glob_to_screen.pxl_per_mtr + centerx,
-          p[1] * glob_to_screen.pxl_per_mtr + centery) for p in poly]
+        poly_transf = [((p[0] + cog_pose.x) * glob_to_screen.pxl_per_mtr,
+                        (p[1] + cog_pose.y) * glob_to_screen.pxl_per_mtr) for p in poly]
         pygame.draw.polygon(surf, colors[idx], poly_transf)
         pygame.draw.lines(surf, (0,0,0), True, poly_transf, int(glob_to_screen.pxl_per_mtr / 7))
