@@ -4,10 +4,10 @@ from scenes.Scenes import SceneBase
 from scenes import StartScene
 from paths.BSpline import BSplinePath
 from utils.pgutils.pgutils import *
-from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font
+from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font, menu_config, v_frame
 from sprites.PathSprite import PathSprite
 from sprites.PathSpriteAuto import PathSpriteAuto
-from sprites.ControlFactory import ControlType, ControlFactory
+from factory.control_factory import ControlType, ControlFactory
 from factory.vehicle_factory import VehicleFactory
 from control import SpeedControl
 
@@ -24,12 +24,13 @@ class SandboxScene(SceneBase):
                              widget_font_color=COLOR6, widget_font_size=18,
                              title=False, title_close_button=False)
         self.menu = menu_default(self.screen, menu_theme, rows=1, columns=8, height=60, position=(50,0), enabled=True)
-        self.path_menu = menu_default(self.screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
+        self.path_menu = menu_config(self.screen, "PATH")
+        f_path_menu = v_frame(self.screen, self.path_menu)
 
         self.is_auto_gen_path = True
-        self.path_menu.add.toggle_switch("AUTO GEN PATH", state_text=("OFF", "ON"), default=1,
-                                         onchange=self._enable_auto_gen_path_callback)
-        self.path_menu.add.button("BACK", pygame_menu.events.BACK)
+        f_path_menu.pack(self.path_menu.add.toggle_switch("AUTO GEN PATH", state_text=("OFF", "ON"), default=1,
+                                         onchange=self._enable_auto_gen_path_callback))
+        f_path_menu.pack(self.path_menu.add.button("BACK", pygame_menu.events.BACK))
 
         self.scene_menu = menu_default(self.screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
         self.scene_menu.add.button("BACK", pygame_menu.events.BACK)

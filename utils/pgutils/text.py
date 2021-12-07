@@ -9,20 +9,28 @@ game_font = os.path.join("utils/pgutils/pixelFont.ttf")
 
 
 def theme_default(font_size: int, **kwargs) -> pygame_menu.Theme:
-    return pygame_menu.Theme(background_color=(0, 0, 0, 0), widget_font=game_font,
+    return pygame_menu.Theme(background_color=(0, 0, 0, 0), widget_font=game_font, title_font=game_font, title_font_size=font_size+4,
                              widget_background_color=(0, 0, 0, 0),
                              widget_font_color=COLOR6, widget_font_size=font_size,
-                             title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_NONE, title_close_button=False, **kwargs)
+                             title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_UNDERLINE_TITLE, title_close_button=False, **kwargs)
 
 
-def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, width=None, height=None, enabled: bool = False, **kwargs) -> pygame_menu.Menu:
+def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, width=None, height=None, enabled: bool = False, title="", **kwargs) -> pygame_menu.Menu:
     if not width:
         width=screen.get_width()
     if not height:
         height=screen.get_height()
-    return pygame_menu.Menu("",
+    return pygame_menu.Menu(title=title,
                             theme=theme, mouse_motion_selection=True, onclose=pygame_menu.events.RESET,
                             enabled=enabled, width=width, height=height, **kwargs)
+
+
+def menu_config(screen: pygame.Surface, title=""):
+    return menu_default(screen, theme_default(16, widget_alignment=pygame_menu.locals.ALIGN_LEFT), title=title)
+
+
+def v_frame(screen: pygame.Surface, menu: pygame_menu.Menu) -> pygame_menu.widgets.Frame:
+    return menu.add.frame_v(0.9 * screen.get_width(), 0.9 * screen.get_height())
 
 
 class HorAlign(Enum):

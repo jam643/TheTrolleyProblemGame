@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from control.ControllerBase import ControllerBase
 from sprites.StanleyControlSprite import StanleyControlSprite, StanleyControl
 from sprites.PurePursuitSprite import PurePursuitSprite, PurePursuitControl
-from utils.pgutils.text import menu_default, theme_default
+from utils.pgutils.text import menu_config, v_frame
 
 
 class ControlType(enum.Enum):
@@ -32,9 +32,10 @@ class StanleyControlBuilder(ControlBuilderInterface):
         self._params = StanleyControl.Params(1.0)
         self._control = StanleyControlSprite(self._params, glob_to_screen)
 
-        self._menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
-        self._menu.add.range_slider("K", self._params.k, (0, 5), 0.05, onchange=self._k_callback)
-        self._menu.add.button("BACK", pygame_menu.events.BACK)
+        self._menu = menu_config(screen, "STANLEY")
+        f_menu = v_frame(screen, self._menu)
+        f_menu.pack(self._menu.add.range_slider("K", self._params.k, (0, 5), 0.05, onchange=self._k_callback))
+        f_menu.pack(self._menu.add.button("BACK", pygame_menu.events.BACK))
 
     @property
     def menu(self) -> pygame_menu.Menu:
@@ -54,10 +55,11 @@ class PurePursuitBuilder(ControlBuilderInterface):
         self._params = PurePursuitControl.Params(0.7)
         self._control = PurePursuitSprite(self._params, glob_to_screen)
 
-        self._menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
-        self._menu.add.range_slider("LOOKAHEAD K", self._params.lookahead_k, (0, 5), 0.05,
-                                   onchange=self._lookahead_k_callback)
-        self._menu.add.button("BACK", pygame_menu.events.BACK)
+        self._menu = menu_config(screen, "PURE PURSUIT")
+        f_menu = v_frame(screen, self._menu)
+        f_menu.pack(self._menu.add.range_slider("LOOKAHEAD K", self._params.lookahead_k, (0, 5), 0.05,
+                                   onchange=self._lookahead_k_callback))
+        f_menu.pack(self._menu.add.button("BACK", pygame_menu.events.BACK))
 
     @property
     def menu(self) -> pygame_menu.Menu:
@@ -79,13 +81,14 @@ class ControlFactory:
 
         self._current_control_type = cont_type
 
-        self.controller_menu = menu_default(screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
-        self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
+        self.controller_menu = menu_config(title="PATH TRACKER", screen=screen)
+        f_controller_menu = v_frame(screen, self.controller_menu)
+        f_controller_menu.pack(self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
                                                      ("STANLEY", ControlType.stanley)], default=cont_type.value,
-                                            onchange=self._change_control_callback)
-        self.control_algo_settings_button = self.controller_menu.add.button("ALGO SETTINGS",
-                                                                            self._get_menu())
-        self.controller_menu.add.button("BACK", pygame_menu.events.BACK)
+                                            onchange=self._change_control_callback))
+        self.control_algo_settings_button = f_controller_menu.pack(self.controller_menu.add.button("ALGO SETTINGS",
+                                                                            self._get_menu()))
+        f_controller_menu.pack(self.controller_menu.add.button("BACK", pygame_menu.events.BACK))
 
     @property
     def control(self) -> ControllerBase:

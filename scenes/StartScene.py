@@ -5,10 +5,8 @@ from scenes.SandboxScene import SandboxScene
 from paths.BSpline import BSplinePath
 from utils.pgutils.pgutils import *
 from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign
-from utils import math
-from sprites.CarSprite import CarSprite
 from sprites.PathSpriteAuto import PathSpriteAuto
-from sprites.ControlFactory import ControlFactory, ControlType
+from factory.control_factory import ControlFactory, ControlType
 from factory.vehicle_factory import VehicleFactory
 from control import SpeedControl
 
