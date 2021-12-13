@@ -1,9 +1,9 @@
 #!/usr/bin/env pipenv-shebang
 
 from profilehooks import profile
-# from scenes.Scenes import *
 from scenes import StartScene
 import pygame
+import subprocess
 
 
 @profile

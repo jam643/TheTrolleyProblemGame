@@ -11,8 +11,8 @@ class MotionModel(ABC):
         EULER = 0
         RK4 = 1
 
-    def __init__(self):
-        self._int_scheme = self.IntScheme.RK4
+    def __init__(self, int_scheme=IntScheme.RK4):
+        self._int_scheme = int_scheme
         self._int_scheme_map = {self.IntScheme.EULER: self._integrate_euler, self.IntScheme.RK4: self._integrate_rk4}
 
     def update(self, vehicle_state: Vehicle, steer, vel, dt) -> Vehicle:

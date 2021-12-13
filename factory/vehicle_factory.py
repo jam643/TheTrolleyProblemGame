@@ -1,6 +1,7 @@
 import pygame
 import pygame_menu
 import enum
+import subprocess
 
 from dynamics.Vehicle import Vehicle
 from dynamics.CartesianDynamicBicycleModel import CartesianDynamicBicycleModel
@@ -28,6 +29,7 @@ class VehicleFactory:
         self._motion_model_map = {MotionModelType.dynamic_model: CartesianDynamicBicycleModel(),
                                   MotionModelType.kinematic_model: CartesianKinematicBicycleModel()}
 
+        self._subprocess_list = []
         self._init_menus()
 
     def update(self, steer, vel, dt):
@@ -49,6 +51,9 @@ class VehicleFactory:
         f_vehicle_menu.pack(self.vehicle_menu.add.button("VEHICLE PARAMS", self._vehicle_param_menu))
         f_vehicle_menu.pack(self.vehicle_menu.add.button("MOTION MODEL", self._motion_model_menu))
         f_vehicle_menu.pack(self.vehicle_menu.add.button("RESET VEHICLE", action=self._reset_init_pose))
+        f_vehicle_menu.pack(self.vehicle_menu.add.button("DOCS", action=lambda : self._subprocess_list.append(subprocess.Popen(
+            ["pipenv", "run", "jupyter", "notebook", "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
+             "./dynamics/docs/KinematicBicycleModel.ipynb"], stdout=subprocess.PIPE))))
         f_vehicle_menu.pack(self.vehicle_menu.add.button("BACK", pygame_menu.events.BACK))
 
         f_vehicle_param_menu.pack(
@@ -79,6 +84,10 @@ class VehicleFactory:
                                                    default=self._current_model_type.value,
                                                    onchange=self._model_callback))
         f_motion_model_menu.pack(self._motion_model_menu.add.button("BACK", pygame_menu.events.BACK))
+
+    def __del__(self):
+        for process in self._subprocess_list:
+            process.kill()
 
     def _lf_callback(self, val):
         self.vehicle_state.params.lf = val

@@ -1,6 +1,7 @@
 from paths.PathBase import PathBase
 from utils.pgutils.pgutils import *
 import math
+import numpy as np
 
 
 class PathSpriteAuto:
