@@ -11,6 +11,10 @@ class PathBase(ABC):
         ...
 
     @abstractmethod
+    def get_curv_at_station(self, station: float) -> float:
+        ...
+
+    @abstractmethod
     def get_nearest_pose(self, point: pygame.Vector2) -> Tuple[Pose, float]:
         ...
 

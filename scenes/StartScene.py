@@ -26,7 +26,7 @@ class StartScene(SceneBase):
         self.menu.add.button("SANDBOX", sandbox_callback)
         self.menu.add.button("QUIT", pygame_menu.events.EXIT)
 
-        self.path_sprite = PathSpriteAuto(BSplinePath([], 20, 3, 0, 1), 27, self.glob_to_screen, screen.get_width(),
+        self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen, screen.get_width(),
                                           screen.get_height())
 
         self.scroll_speed = 10

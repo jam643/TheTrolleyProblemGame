@@ -9,7 +9,7 @@ game_font = os.path.join("utils/pgutils/pixelFont.ttf")
 
 
 def theme_default(font_size: int, **kwargs) -> pygame_menu.Theme:
-    return pygame_menu.Theme(background_color=(0, 0, 0, 0), widget_font=game_font, title_font=game_font, title_font_size=font_size+4,
+    return pygame_menu.Theme(background_color=pygame_menu.themes.TRANSPARENT_COLOR, widget_font=game_font, title_font=game_font, title_font_size=font_size+4,
                              widget_background_color=(0, 0, 0, 0),
                              widget_font_color=COLOR6, widget_font_size=font_size,
                              title_bar_style=pygame_menu.widgets.MENUBAR_STYLE_UNDERLINE_TITLE, title_close_button=False, **kwargs)

@@ -26,11 +26,12 @@ class PurePursuitControl(ControllerBase):
         self.params = params
 
     def update(self, car: Vehicle, path: PathBase) -> float:
+        self.path = path
         if not path:
             return self.steer_cont
-        self.nearest_pose, station = path.get_nearest_pose(car.pose_rear_axle)
+        self.nearest_pose, self.station = path.get_nearest_pose(car.pose_rear_axle)
         if self.nearest_pose:
-            self.lookahead_pose = path.get_pose_at_station(station + car.state_cog.vx * self.params.lookahead_k)
+            self.lookahead_pose = path.get_pose_at_station(self.station + car.state_cog.vx * self.params.lookahead_k)
             lookahead_in_car_frame = math.rot(math.diff(self.lookahead_pose, car.pose_rear_axle), -car.pose.theta)
             self.alpha = np.arctan2(lookahead_in_car_frame.y, lookahead_in_car_frame.x)
 

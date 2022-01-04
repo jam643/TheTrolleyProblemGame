@@ -115,5 +115,6 @@ class VehicleFactory:
         pose_init = self.glob_to_screen.get_pose_glob_from_pxl(
             math.Pose(self.screen.get_width() / 2, self.screen.get_height() / 2, 0))
         vel_init = 10
-        self.vehicle_state = Vehicle().build_pose(pose_init).build_vel(vel_init, 0)
+        self.vehicle_state = Vehicle(params=Vehicle.Params()).build_pose(pose_init).build_vel(vel_init, 0)
+        self.car_sprite = CarSprite(self.glob_to_screen, self.vehicle_state.params)
         return self.vehicle_state

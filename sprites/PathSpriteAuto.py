@@ -11,7 +11,7 @@ class PathSpriteAuto:
 
         self.last_pose = []
         self.spline_timer = pygame.time.get_ticks()
-        self.spline_update = 50
+        self.spline_update = 100
         self.mouse_position = None
         self.max_len_path = max_len_path
         self.create_spline_x = 0.9 * screen_width

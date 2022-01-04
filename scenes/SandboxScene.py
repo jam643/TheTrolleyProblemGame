@@ -16,7 +16,7 @@ class SandboxScene(SceneBase):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 40
-        self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.pure_pursuit)
+        self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.dlqr)
         self.vehicle_factory = VehicleFactory(self.glob_to_screen, screen)
 
         menu_theme = pygame_menu.Theme(background_color=(0, 0, 0, 100), widget_font=game_font,
@@ -48,12 +48,12 @@ class SandboxScene(SceneBase):
         self.menu.add.button("MAIN MENU", start_scene_callback)
         self.is_enable_algo_viz = True
 
-        self.path_sprite = self.path_sprite = PathSpriteAuto(BSplinePath([], 20, 3, 0, 1), 27, self.glob_to_screen,
+        self.path_sprite = self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
                                                              self.screen.get_width(),
                                                              self.screen.get_height())
 
         self.scroll_speed = 17
-        self.speed_control = SpeedControl.SpeedControl(station_setpoint=25)
+        self.speed_control = SpeedControl.SpeedControl(station_setpoint=20)
         self.steer = 0
         self.vel = self.vehicle_factory.vehicle_state.state_cog.vx
         # self.trace_sprite = TraceSprite(self.glob_to_screen)
@@ -65,11 +65,17 @@ class SandboxScene(SceneBase):
             self.menu.update(events)
 
         for event in events:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_m:
-                if self.menu.is_enabled():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                if self.is_auto_gen_path:
+                    self.path_sprite = PathSprite(BSplinePath([], 20, 3, 0, 1), self.glob_to_screen)
                     self.menu.disable()
+                    self.is_auto_gen_path = False
                 else:
+                    self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
+                                                      self.screen.get_width(),
+                                                      self.screen.get_height())
                     self.menu.enable()
+                    self.is_auto_gen_path = True
 
     def update(self):
         if not self.menu.is_enabled() or self.is_auto_gen_path:
@@ -104,7 +110,7 @@ class SandboxScene(SceneBase):
                           color=WHITE,
                           pose=pygame.Vector2(0.01, 0.99), hor_align=HorAlign.LEFT,
                           vert_align=VertAlign.BOTTOM)
-        message_to_screen(text="M: TOGGLE MENU", screen=self.screen, fontsize=12,
+        message_to_screen(text="P: {}".format("DRAW PATH" if self.is_auto_gen_path else "SANDBOX"), screen=self.screen, fontsize=12,
                           color=WHITE,
                           pose=pygame.Vector2(1, 1), hor_align=HorAlign.RIGHT,
                           vert_align=VertAlign.BOTTOM)
@@ -115,7 +121,7 @@ class SandboxScene(SceneBase):
     def _enable_auto_gen_path_callback(self, val: bool):
         self.is_auto_gen_path = val
         if val:
-            self.path_sprite = PathSpriteAuto(BSplinePath([], 20, 3, 0, 1), 27, self.glob_to_screen,
+            self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
                                               self.screen.get_width(),
                                               self.screen.get_height())
         else:

@@ -28,9 +28,9 @@ class Vehicle:
         def wheel_base(self):
             return self.lf + self.lr
 
-    def __init__(self, state_cog: State = State(), params: Params = Params()):
-        self.state_cog = state_cog
-        self.params = params
+    def __init__(self, state_cog: State = None, params: Params = None):
+        self.state_cog = state_cog if state_cog else self.State()
+        self.params = params if params else self.Params()
 
     def build_pose(self, pose: math.Pose):
         self.state_cog.x = pose.x
@@ -58,3 +58,7 @@ class Vehicle:
     @property
     def point(self):
         return math.Point(self.state_cog.x, self.state_cog.y)
+
+    @property
+    def vel_cog_mag(self):
+        return np.sqrt(self.state_cog.vx**2 + self.state_cog.vy**2)

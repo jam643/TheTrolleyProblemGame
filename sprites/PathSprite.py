@@ -10,9 +10,9 @@ class PathSprite:
 
         self.last_pose = []
         self.spline_timer = pygame.time.get_ticks()
-        self.spline_update = 50
+        self.spline_update = 100
         self.mouse_position = None
-        self.N = 40
+        self.N = 15
 
     def draw(self, screen: pygame.Surface):
         width = 15

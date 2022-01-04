@@ -16,6 +16,7 @@ class BSplinePath(PathBase):
 
         self.spline_list = None
         self.spline_station = None
+        self.spline_curv = None
         self.update(points)
         self.nearest_idx = 0
 
@@ -25,6 +26,13 @@ class BSplinePath(PathBase):
                 break
 
         return self.spline_list[idx]
+
+    def get_curv_at_station(self, station: float) -> float:
+        for idx, spline_station in enumerate(self.spline_station):
+            if station <= spline_station:
+                break
+
+        return self.spline_curv[idx]
 
     def get_nearest_pose(self, point: pygame.Vector2) -> Tuple[Pose, float]:
         if not self.spline_list:
@@ -50,6 +58,7 @@ class BSplinePath(PathBase):
             return
         elif len(points) <= self.degree:
             self.spline_list = [Pose(p.x, p.y, 0) for p in points]
+            self.spline_curv = [0.0] * len(self.spline_list)
             return
 
         self.nearest_idx = 0
@@ -72,8 +81,16 @@ class BSplinePath(PathBase):
         rx = scipy_interpolate.splev(ipl_t, x_list)
         ry = scipy_interpolate.splev(ipl_t, y_list)
 
-        rtheta = np.arctan2(scipy_interpolate.splev(ipl_t, y_list, der=1), scipy_interpolate.splev(ipl_t, x_list, der=1))
+        dx_dt = scipy_interpolate.splev(ipl_t, x_list, der=1)
+        dy_dt = scipy_interpolate.splev(ipl_t, y_list, der=1)
+        d2x_dt2 = scipy_interpolate.splev(ipl_t, x_list, der=2)
+        d2y_dt2 = scipy_interpolate.splev(ipl_t, y_list, der=2)
 
+        rtheta = np.arctan2(dy_dt, dx_dt)
+
+        # TODO add comment with derivation
+        # TODO make spline state dataclass
+        self.spline_curv = (dx_dt*d2y_dt2 + d2x_dt2*dy_dt) * (dx_dt**2 + dy_dt**2)**(-3/2)
         self.spline_list = [Pose(rx[idx], ry[idx], rtheta[idx]) for idx in range(len(rx))]
 
     def update(self, points: List[pygame.Vector2]):

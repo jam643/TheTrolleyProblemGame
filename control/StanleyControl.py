@@ -30,6 +30,7 @@ class StanleyControl(ControllerBase):
         self.car_front_axle = car.pose_front_axle
         self.nearest_pose, station = path.get_nearest_pose(self.car_front_axle)
         if self.nearest_pose:
+            # TODO wrap to pi
             theta_e = car.pose.theta - self.nearest_pose.theta
             self.path_unit_normal = math.unit_vec2(self.nearest_pose.theta + np.pi/2)
             self.cte = math.dot(math.diff(car.pose, self.nearest_pose), self.path_unit_normal)
