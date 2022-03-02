@@ -2,14 +2,13 @@ import pygame_menu
 
 from scenes.Scenes import SceneBase
 from scenes import StartScene
-from paths.BSpline import BSplinePath
 from utils.pgutils.pgutils import *
-from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font, menu_config, v_frame
-from sprites.PathSprite import PathSprite
-from sprites.PathSpriteAuto import PathSpriteAuto
+from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font
 from factory.control_factory import ControlType, ControlFactory
 from factory.vehicle_factory import VehicleFactory
+from factory.path_factory import PathFactory, PathGenType
 from control import SpeedControl
+import utils.pgutils.text as txt
 
 
 class SandboxScene(SceneBase):
@@ -17,46 +16,36 @@ class SandboxScene(SceneBase):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 40
         self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.dlqr)
-        self.vehicle_factory = VehicleFactory(self.glob_to_screen, screen)
+        self.vehicle_factory = VehicleFactory(self.glob_to_screen, self.screen)
+        self.path_factory = PathFactory(self.glob_to_screen, self.screen, PathGenType.auto_gen)
 
         menu_theme = pygame_menu.Theme(background_color=(0, 0, 0, 100), widget_font=game_font,
-                             widget_background_color=(0, 0, 0, 0),
-                             widget_font_color=COLOR6, widget_font_size=18,
-                             title=False, title_close_button=False)
-        self.menu = menu_default(self.screen, menu_theme, rows=1, columns=8, height=60, position=(50,0), enabled=True)
-        self.path_menu = menu_config(self.screen, "PATH")
-        f_path_menu = v_frame(self.screen, self.path_menu)
-
-        self.is_auto_gen_path = True
-        f_path_menu.pack(self.path_menu.add.toggle_switch("AUTO GEN PATH", state_text=("OFF", "ON"), default=1,
-                                         onchange=self._enable_auto_gen_path_callback))
-        f_path_menu.pack(self.path_menu.add.button("BACK", pygame_menu.events.BACK))
+                                       widget_background_color=(0, 0, 0, 0),
+                                       widget_font_color=COLOR6, widget_font_size=18,
+                                       title=False, title_close_button=False)
+        self.menu = menu_default(self.screen, menu_theme, rows=1, columns=8, height=60, position=(50, 0), enabled=True)
 
         self.scene_menu = menu_default(self.screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
         self.scene_menu.add.button("BACK", pygame_menu.events.BACK)
 
         self.menu.add.button("PATH TRACKER", self.control_factory.controller_menu)
         self.menu.add.button("VEHICLE", self.vehicle_factory.vehicle_menu)
-        self.menu.add.button("PATH", self.path_menu)
-        self.menu.add.button("LL CONTROL", self.path_menu)
-        self.menu.add.button("SCENE", self.path_menu)
-        self.scene_menu.add.toggle_switch("VISUALIZATIONS", state_text=("OFF", "ON"), onchange=self._enable_algo_viz_callback,
-                                    default=1)
+        self.menu.add.button("PATH", self.path_factory.menu)
+        self.menu.add.button("LL CONTROL", self.path_factory.menu)
+        self.menu.add.button("SCENE", self.path_factory.menu)
+        self.scene_menu.add.toggle_switch("VISUALIZATIONS", state_text=("OFF", "ON"),
+                                          onchange=self._enable_algo_viz_callback,
+                                          default=1)
 
         def start_scene_callback(): self.next = StartScene.StartScene(self.screen)
 
         self.menu.add.button("MAIN MENU", start_scene_callback)
         self.is_enable_algo_viz = True
-
-        self.path_sprite = self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
-                                                             self.screen.get_width(),
-                                                             self.screen.get_height())
-
-        self.scroll_speed = 17
-        self.speed_control = SpeedControl.SpeedControl(station_setpoint=20)
+        self.pause_scene = False
+        self.scroll_speed_mps = 14
+        self.speed_control = SpeedControl.SpeedControl(SpeedControl.SpeedControl.Params())
         self.steer = 0
         self.vel = self.vehicle_factory.vehicle_state.state_cog.vx
-        # self.trace_sprite = TraceSprite(self.glob_to_screen)
 
     def process_input(self, events, pressed_keys):
         super().process_input(events, pressed_keys)
@@ -66,42 +55,45 @@ class SandboxScene(SceneBase):
 
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                if self.is_auto_gen_path:
-                    self.path_sprite = PathSprite(BSplinePath([], 20, 3, 0, 1), self.glob_to_screen)
+                if self.path_factory.current_path_gen_type is PathGenType.auto_gen:
+                    self.path_factory.set_gen_type(PathGenType.manual_draw)
                     self.menu.disable()
-                    self.is_auto_gen_path = False
                 else:
-                    self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
-                                                      self.screen.get_width(),
-                                                      self.screen.get_height())
+                    self.path_factory.set_gen_type(PathGenType.auto_gen)
                     self.menu.enable()
-                    self.is_auto_gen_path = True
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                self.vehicle_factory.reset_init_pose()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+                self.pause_scene = not self.pause_scene
 
     def update(self):
-        if not self.menu.is_enabled() or self.is_auto_gen_path:
-            self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
-            if self.is_auto_gen_path:
-                self.path_sprite.update(self.get_time_s())
-                self.glob_to_screen.x_pxl_rel_glob -= 17
-            else:
-                self.path_sprite.update()
-                self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt * (
-                        (pygame.mouse.get_pos()[0] / self.screen.get_width()) - 0.5) * 2
+        if self.pause_scene:
+            return
+        # propagate vehicle with previous control commands
+        self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
 
-            self.steer = self.control_factory.control.update(self.vehicle_factory.vehicle_state, self.path_sprite.path)
-            self.vel = self.speed_control.update(self.vehicle_factory.vehicle_state, self.path_sprite.path,
-                                            self.glob_to_screen.sim_dt)
-            # self.trace_sprite.update(self.car_sprite.vehicle_state.pose.x,  # TODO direct access from factory/refactor
-            #                          self.car_sprite.vehicle_state.pose.y,
-            #                          self.glob_to_screen.sim_dt)
+        path = self.path_factory.update(self.glob_to_screen.time_s)
+        self.steer = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.vel = self.speed_control.update(self.vehicle_factory.vehicle_state, path,
+                                             self.glob_to_screen.sim_dt)
+
+        if self.path_factory.current_path_gen_type is PathGenType.auto_gen:  # todo move to scene_factory
+            self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed_mps * self.glob_to_screen.sim_dt * self.glob_to_screen.pxl_per_mtr
+        else:
+            self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed_mps * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt * (
+                    (pygame.mouse.get_pos()[0] / self.screen.get_width()) - 0.5) * 2
+
+        self.glob_to_screen.update()
 
     def render(self):
+        if self.pause_scene:
+            return
         self.screen.fill(COLOR1)
 
-        self.path_sprite.draw(self.screen)
+        self.path_factory.draw(self.screen)
         self.vehicle_factory.draw(self.screen)
         if self.is_enable_algo_viz:
-            self.control_factory.control.draw(self.screen)
+            self.control_factory.draw(self.screen)
 
         if self.menu.is_enabled():
             self.menu.draw(self.screen)
@@ -110,19 +102,12 @@ class SandboxScene(SceneBase):
                           color=WHITE,
                           pose=pygame.Vector2(0.01, 0.99), hor_align=HorAlign.LEFT,
                           vert_align=VertAlign.BOTTOM)
-        message_to_screen(text="P: {}".format("DRAW PATH" if self.is_auto_gen_path else "SANDBOX"), screen=self.screen, fontsize=12,
-                          color=WHITE,
-                          pose=pygame.Vector2(1, 1), hor_align=HorAlign.RIGHT,
-                          vert_align=VertAlign.BOTTOM)
+        txt.message_to_screen(text="P: {}".format(
+            "DRAW PATH" if self.path_factory.current_path_gen_type is PathGenType.auto_gen else "SANDBOX"),
+                              screen=self.screen, fontsize=12,
+                              color=txt.WHITE,
+                              pose=pygame.Vector2(1, 1), hor_align=txt.HorAlign.RIGHT,
+                              vert_align=txt.VertAlign.BOTTOM)
 
     def _enable_algo_viz_callback(self, val: bool):
         self.is_enable_algo_viz = val
-
-    def _enable_auto_gen_path_callback(self, val: bool):
-        self.is_auto_gen_path = val
-        if val:
-            self.path_sprite = PathSpriteAuto(BSplinePath([], 15, 3, 0, 1), 27, self.glob_to_screen,
-                                              self.screen.get_width(),
-                                              self.screen.get_height())
-        else:
-            self.path_sprite = PathSprite(BSplinePath([], 20, 3, 0, 1), self.glob_to_screen)

@@ -8,11 +8,9 @@ from utils.pgutils.pgutils import *
 from utils import math
 from sprites.CarSprite import CarSprite
 from sprites.PathSprite import PathSprite
-from sprites.PathSpriteAuto import PathSpriteAuto
 from sprites.TraceSprite import TraceSprite
 from sprites.PurePursuitSprite import PurePursuitSprite
 from control import ManualControl, PurePursuitControl, SpeedControl
-
 
 
 class SceneBase(ABC):
@@ -44,7 +42,7 @@ class SceneBase(ABC):
     def render(self):
         pass
 
-    def get_time_s(self):
+    def get_time_s(self) -> float:
         return (pygame.time.get_ticks() - self.time_scene_start_ms) * 1e-3
 
     def switch_to_scene(self, next_scene):

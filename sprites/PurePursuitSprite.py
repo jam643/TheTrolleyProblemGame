@@ -5,9 +5,10 @@ from control.PurePursuitControl import PurePursuitControl
 from utils.pgutils.pgutils import *
 from utils import math
 from utils.pgutils.text import message_to_screen, HorAlign, VertAlign
+from sprites.control_sprite import ControlSprite
 
 
-class PurePursuitSprite(PurePursuitControl):
+class PurePursuitSprite(PurePursuitControl, ControlSprite):
     def __init__(self, params: PurePursuitControl.Params, glob_to_screen: GlobToScreen):
         PurePursuitControl.__init__(self, params)
         self.glob_to_screen = glob_to_screen
@@ -40,6 +41,9 @@ class PurePursuitSprite(PurePursuitControl):
                     math.add_body_frame(self.nearest_pose, math.Pose(-d, 0, 0)).to_vect2()),
                                  self.glob_to_screen.get_pxl_from_glob(
                                      math.add_body_frame(self.nearest_pose, math.Pose(d, 0, 0)).to_vect2()))
+
+    def draw_plots(self, screen: pygame.Surface):
+        pass
 
     def _draw_arc(self, screen):
         center = self.glob_to_screen.get_pxl_from_glob(

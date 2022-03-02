@@ -32,14 +32,13 @@ def solve_DARE(A, B, Q, R):
     for i in range(maxiter):
         iter += 1
         Xn = A.T @ X @ A - A.T @ X @ B @ \
-            la.inv(R + B.T @ X @ B) @ B.T @ X @ A + Q
+             la.inv(R + B.T @ X @ B) @ B.T @ X @ A + Q
         if (abs(Xn - X)).max() < eps:
             break
         X = Xn
 
-    print("iter: {}".format(iter))
+    # print("iter: {}".format(iter))
     np.set_printoptions(suppress=True)
-    print(Xn)
     return Xn
 
 
@@ -56,9 +55,10 @@ def dlqr(A, B, Q, R):
     # compute the LQR gain
     K = la.inv(B.T @ X @ B + R) @ (B.T @ X @ A)
 
-    eigVals, eigVecs = la.eig(A - B @ K)
+    # TODO time this
+    # eigVals, eigVecs = la.eig(A - B @ K)
 
-    return K, X, eigVals
+    return K, X
 
 
 class DiscreteLQRPathTracker(ControllerBase):
@@ -76,26 +76,34 @@ class DiscreteLQRPathTracker(ControllerBase):
         self.set_params(params)
 
         self.delta = 0.0
+        self.nearest_pose = None
+        self.path = None
+        self.car = None
+        self.cte = None
+        self.curv_ref = None
 
     def set_params(self, params: Params):
         self.params = params
 
-    def draw(self, screen):
-        # TODO delete
-        pass
-
     def update(self, car: Vehicle, path: PathBase) -> float:
-        nearest_pose, station = path.get_nearest_pose(car.pose_rear_axle.get_point)
+        self.nearest_pose, station = path.get_nearest_pose(car.pose_rear_axle.get_point)
+        self.car = car
+        self.path = path
 
-        if not nearest_pose:
+        if not self.nearest_pose:
             return self.delta
 
-        path_unit_normal = math.unit_vec2(nearest_pose.theta + np.pi / 2)
-        cte = math.dot(math.diff(car.pose, nearest_pose), path_unit_normal)
+        self.path_unit_normal = math.unit_vec2(self.nearest_pose.theta + np.pi / 2)
+        self.cte = math.dot(math.diff(car.pose_rear_axle, self.nearest_pose), self.path_unit_normal)
 
-        theta_e = pi_2_pi(car.pose.theta - nearest_pose.theta)
+        # todo move calc to veh
+        self.cte_dot = math.dot(
+            math.Point(car.state_cog.vx * np.cos(car.state_cog.theta), car.state_cog.vx * np.sin(car.state_cog.theta)),
+            self.path_unit_normal)
 
-        curv_ref = path.get_curv_at_station(station)
+        self.theta_e = pi_2_pi(car.pose.theta - self.nearest_pose.theta)
+
+        self.curv_ref = path.get_curv_at_station(station)
 
         v = car.vel_cog_mag
 
@@ -109,19 +117,18 @@ class DiscreteLQRPathTracker(ControllerBase):
         B = np.zeros((4, 1))
         B[3, 0] = v / car.params.wheel_base
 
-        K, _, _ = dlqr(A, B, self.params.Q, self.params.R)
+        K, _ = dlqr(A, B, self.params.Q, self.params.R)
 
         x = np.zeros((4, 1))
 
-        x[0, 0] = cte
-        x[1, 0] = 0.0
-        x[2, 0] = theta_e
+        x[0, 0] = self.cte
+        x[1, 0] = self.cte_dot
+        x[2, 0] = self.theta_e
         x[3, 0] = 0.0
 
-        ff = np.arctan2(car.params.wheel_base * curv_ref, 1)
+        ff = np.arctan2(car.params.wheel_base * self.curv_ref, 1)
         fb = pi_2_pi((-K @ x)[0, 0])
 
         self.delta = ff + fb
 
         return self.delta
-

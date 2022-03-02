@@ -25,8 +25,8 @@ def menu_default(screen: pygame.Surface, theme: pygame_menu.Theme, width=None, h
                             enabled=enabled, width=width, height=height, **kwargs)
 
 
-def menu_config(screen: pygame.Surface, title=""):
-    return menu_default(screen, theme_default(16, widget_alignment=pygame_menu.locals.ALIGN_LEFT), title=title)
+def menu_config(screen: pygame.Surface, title="", fontsize=16):
+    return menu_default(screen, theme_default(fontsize, widget_alignment=pygame_menu.locals.ALIGN_LEFT), title=title)
 
 
 def v_frame(screen: pygame.Surface, menu: pygame_menu.Menu) -> pygame_menu.widgets.Frame:

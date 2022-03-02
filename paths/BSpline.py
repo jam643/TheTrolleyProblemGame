@@ -7,6 +7,7 @@ from utils.math import Pose
 
 
 class BSplinePath(PathBase):
+    # todo params class with menu
     def __init__(self, points: List[pygame.Vector2], n_path_points: int,
                  degree: int = 3, smoothness: float = 0, coeff: int = 0):
         self.n_path_points = n_path_points
@@ -15,6 +16,7 @@ class BSplinePath(PathBase):
         self.coeff = coeff
 
         self.spline_list = None
+        self.points = None
         self.spline_station = None
         self.spline_curv = None
         self.update(points)
@@ -53,6 +55,7 @@ class BSplinePath(PathBase):
         return self.spline_list[self.nearest_idx], self.spline_station[self.nearest_idx]
 
     def __update_spline_list(self, points: List[pygame.Vector2]):
+        self.points = points
         self.spline_list = None
         if len(points) <= 1:
             return

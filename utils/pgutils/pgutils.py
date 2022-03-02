@@ -16,14 +16,16 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
-@dataclass
 class GlobToScreen:
-    pxl_per_mtr: float
-    x_pxl_rel_glob: float
-    y_pxl_rel_glob: float
 
-    fps: int
-    play_speed: float
+    def __init__(self, pxl_per_mtr: float, x_pxl_rel_glob: float, y_pxl_rel_glob: float, fps: float, play_speed: float):
+        self.pxl_per_mtr = pxl_per_mtr
+        self.x_pxl_rel_glob = x_pxl_rel_glob
+        self.y_pxl_rel_glob = y_pxl_rel_glob
+        self.fps = fps
+        self.play_speed = play_speed
+
+        self.time_s = 0
 
     @overload
     def get_pxl_from_glob(self, points: pygame.Vector2) -> pygame.Vector2:
@@ -77,6 +79,9 @@ class GlobToScreen:
     @property
     def sim_dt(self):
         return self.play_speed / self.fps
+
+    def update(self):
+        self.time_s += self.sim_dt
 
 
 def draw_polygons(surf: pygame.Surface, polygon_list: List[List[Tuple[float, float]]], cog_pose: math.Point, colors: List[pygame.Color],

@@ -60,5 +60,9 @@ class Vehicle:
         return math.Point(self.state_cog.x, self.state_cog.y)
 
     @property
+    def vel_cog(self):
+        return math.Point(self.state_cog.vx, self.state_cog.vy)
+
+    @property
     def vel_cog_mag(self):
         return np.sqrt(self.state_cog.vx**2 + self.state_cog.vy**2)

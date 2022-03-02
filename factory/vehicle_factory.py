@@ -23,7 +23,7 @@ class VehicleFactory:
 
         self.glob_to_screen = glob_to_screen
         self.screen = screen
-        self.vehicle_state = self._reset_init_pose()
+        self.vehicle_state = self.reset_init_pose()
         self.car_sprite = CarSprite(glob_to_screen, self.vehicle_state.params)
 
         self._motion_model_map = {MotionModelType.dynamic_model: CartesianDynamicBicycleModel(),
@@ -50,7 +50,7 @@ class VehicleFactory:
 
         f_vehicle_menu.pack(self.vehicle_menu.add.button("VEHICLE PARAMS", self._vehicle_param_menu))
         f_vehicle_menu.pack(self.vehicle_menu.add.button("MOTION MODEL", self._motion_model_menu))
-        f_vehicle_menu.pack(self.vehicle_menu.add.button("RESET VEHICLE", action=self._reset_init_pose))
+        f_vehicle_menu.pack(self.vehicle_menu.add.button("RESET VEHICLE", action=self.reset_init_pose))
         f_vehicle_menu.pack(self.vehicle_menu.add.button("DOCS", action=lambda : self._subprocess_list.append(subprocess.Popen(
             ["pipenv", "run", "jupyter", "notebook", "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
              "./dynamics/docs/KinematicBicycleModel.ipynb"], stdout=subprocess.PIPE))))
@@ -111,7 +111,7 @@ class VehicleFactory:
     def _model_callback(self, _, model_type):
         self._current_model_type = model_type
 
-    def _reset_init_pose(self):
+    def reset_init_pose(self):
         pose_init = self.glob_to_screen.get_pose_glob_from_pxl(
             math.Pose(self.screen.get_width() / 2, self.screen.get_height() / 2, 0))
         vel_init = 10

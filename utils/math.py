@@ -69,11 +69,6 @@ def rot(p: Point, theta):
     return Point(p.x * np.cos(theta) - p.y * np.sin(theta), p.x * np.sin(theta) + p.y * np.cos(theta))
 
 
-def unit_vec(v: Point):
-    n = distance(v, Point(0, 0))
-    return Point(n.x / norm, n.y / norm)
-
-
 def unit_vec2(p: float):
     return Point(np.cos(p), np.sin(p))
 

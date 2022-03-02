@@ -1,27 +1,29 @@
-import pygame
-import numpy as np
+from abc import ABC, abstractmethod
 
 from dynamics.CartesianDynamicBicycleModel import CartesianDynamicBicycleModel
 from paths.PathBase import PathBase
-from control.ControllerBase import ControllerBase
-import utils.math as math
 
 
-class SpeedControl(ControllerBase):
-    def __init__(self, station_setpoint):
-        self.min_speed = 2
-        self.max_speed = 20
-        self.min_accel = -4
-        self.max_accel = 3
-        self.speed_cont = 10
-        self.station_setpoint = station_setpoint
+class SpeedControl:
+    @abstractmethod
+    class Params:
+        min_speed: float = 2
+        max_speed: float = 20
+        min_accel: float = -4
+        max_accel: float = 3
+        station_setpoint: float = 10
+        p: float = 0.5
+        p_d: float = 1
+
+    def __init__(self, params: Params):
+        self._params = params
         self.station_to_end = None
-        self.p = 1/2
-        self.p_d = 1
+        self.speed_cmd = 10.
+        self.nearest_pose = None
 
     def update(self, car: CartesianDynamicBicycleModel, path: PathBase, dt) -> float:
         if not path:
-            return self.steer_cont
+            return self.speed_cmd
         self.nearest_pose, station = path.get_nearest_pose(car.pose_rear_axle)
         if self.nearest_pose:
             station_to_end = path.spline_station[-1] - station
@@ -29,7 +31,8 @@ class SpeedControl(ControllerBase):
             if self.station_to_end:
                 station_rate = (station_to_end - self.station_to_end)/dt
             self.station_to_end = station_to_end
-            accel = -self.p * (self.station_setpoint - station_to_end) + self.p_d * station_rate
-            accel = max(self.min_accel, min(self.max_accel, accel))
-            self.speed_cont = max(self.min_speed, min(self.max_speed, self.speed_cont + dt * accel))
-        return self.speed_cont
+            accel = -self._params.p * (self._params.station_setpoint - station_to_end) + self._params.p_d * station_rate
+            accel = max(self._params.min_accel, min(self._params.max_accel, accel))
+            self.speed_cmd = max(self._params.min_speed, min(self._params.max_speed, self.speed_cmd + dt * accel))
+        return self.speed_cmd
+
