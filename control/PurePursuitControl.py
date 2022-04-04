@@ -29,7 +29,8 @@ class PurePursuitControl(ControllerBase):
         self.path = path
         if not path:
             return self.steer_cont
-        self.nearest_pose, self.station = path.get_nearest_pose(car.pose_rear_axle)
+        self.car_ref_pnt = car.pose_rear_axle.point
+        self.nearest_pose, self.station = path.get_nearest_pose(self.car_ref_pnt)
         if self.nearest_pose:
             self.lookahead_pose = path.get_pose_at_station(self.station + car.state_cog.vx * self.params.lookahead_k)
             lookahead_in_car_frame = math.rot(math.diff(self.lookahead_pose, car.pose_rear_axle), -car.pose.theta)

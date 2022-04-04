@@ -40,7 +40,7 @@ class Pose(Point):
     theta: float
 
     @property
-    def get_point(self):
+    def point(self):
         return Point(self.x, self.y)
 
 
@@ -56,6 +56,12 @@ def cross(v1: Point, v2: Point):
     return v1.x * v2.y - v2.x * v1.y
 
 
+# [0,0,z] x [x,y,0]
+def cross3(z_mag: float, xy_vec: Point):
+    return Point(-z_mag * xy_vec.y, z_mag * xy_vec.x)
+
+
+# add p2 (rel p1 body frame) to p1
 def add_body_frame(p1: Pose, p2: Pose) -> Pose:
     return Pose(p1.x + p2.x * np.cos(p1.theta) - p2.y * np.sin(p1.theta),
                 p1.y + p2.y * np.cos(p1.theta) + p2.x * np.sin(p1.theta), p1.theta + p2.theta)
@@ -63,6 +69,10 @@ def add_body_frame(p1: Pose, p2: Pose) -> Pose:
 
 def dot(v1: Point, v2: Point):
     return v1.x * v2.x + v1.y * v2.y
+
+
+def norm(p: Point):
+    return np.sqrt(p.x ** 2 + p.y ** 2)
 
 
 def rot(p: Point, theta):
@@ -83,3 +93,7 @@ def trans_rot(pts: Union[Point, List[Point]], x: float, y: float, theta: float):
 
     return [Point(p.x * np.cos(theta) - p.y * np.sin(theta) + x, p.x * np.sin(theta) + p.y * np.cos(theta) + y) for p in
             pts]
+
+
+def pi_2_pi(angle):
+    return (angle + np.pi) % (2 * np.pi) - np.pi

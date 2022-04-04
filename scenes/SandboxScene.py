@@ -16,7 +16,7 @@ class SandboxScene(SceneBase):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 40
         self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.dlqr)
-        self.vehicle_factory = VehicleFactory(self.glob_to_screen, self.screen)
+        self.vehicle_factory = VehicleFactory(self.glob_to_screen, self.screen, draw_plots=True)
         self.path_factory = PathFactory(self.glob_to_screen, self.screen, PathGenType.auto_gen)
 
         menu_theme = pygame_menu.Theme(background_color=(0, 0, 0, 100), widget_font=game_font,
@@ -25,17 +25,11 @@ class SandboxScene(SceneBase):
                                        title=False, title_close_button=False)
         self.menu = menu_default(self.screen, menu_theme, rows=1, columns=8, height=60, position=(50, 0), enabled=True)
 
-        self.scene_menu = menu_default(self.screen, theme_default(18, widget_alignment=pygame_menu.locals.ALIGN_RIGHT))
-        self.scene_menu.add.button("BACK", pygame_menu.events.BACK)
-
         self.menu.add.button("PATH TRACKER", self.control_factory.controller_menu)
         self.menu.add.button("VEHICLE", self.vehicle_factory.vehicle_menu)
         self.menu.add.button("PATH", self.path_factory.menu)
         self.menu.add.button("LL CONTROL", self.path_factory.menu)
         self.menu.add.button("SCENE", self.path_factory.menu)
-        self.scene_menu.add.toggle_switch("VISUALIZATIONS", state_text=("OFF", "ON"),
-                                          onchange=self._enable_algo_viz_callback,
-                                          default=1)
 
         def start_scene_callback(): self.next = StartScene.StartScene(self.screen)
 
@@ -54,7 +48,7 @@ class SandboxScene(SceneBase):
             self.menu.update(events)
 
         for event in events:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
                 if self.path_factory.current_path_gen_type is PathGenType.auto_gen:
                     self.path_factory.set_gen_type(PathGenType.manual_draw)
                     self.menu.disable()
@@ -69,6 +63,7 @@ class SandboxScene(SceneBase):
     def update(self):
         if self.pause_scene:
             return
+        super().update()
         # propagate vehicle with previous control commands
         self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
 
@@ -83,11 +78,9 @@ class SandboxScene(SceneBase):
             self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed_mps * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt * (
                     (pygame.mouse.get_pos()[0] / self.screen.get_width()) - 0.5) * 2
 
-        self.glob_to_screen.update()
-
     def render(self):
-        if self.pause_scene:
-            return
+        # if self.pause_scene:
+        #     return
         self.screen.fill(COLOR1)
 
         self.path_factory.draw(self.screen)
@@ -102,12 +95,16 @@ class SandboxScene(SceneBase):
                           color=WHITE,
                           pose=pygame.Vector2(0.01, 0.99), hor_align=HorAlign.LEFT,
                           vert_align=VertAlign.BOTTOM)
-        txt.message_to_screen(text="P: {}".format(
-            "DRAW PATH" if self.path_factory.current_path_gen_type is PathGenType.auto_gen else "SANDBOX"),
-                              screen=self.screen, fontsize=12,
-                              color=txt.WHITE,
-                              pose=pygame.Vector2(1, 1), hor_align=txt.HorAlign.RIGHT,
-                              vert_align=txt.VertAlign.BOTTOM)
+        help_txt = ["D: {}".format(
+            "DRAW PATH" if self.path_factory.current_path_gen_type is PathGenType.auto_gen else "GEN PATH"),
+            "P: {}".format(
+                "PLAY" if self.pause_scene else "PAUSE"), "R: RESET CAR", "Q: QUIT"]
+        for idx, text in enumerate(reversed(help_txt)):
+            txt.message_to_screen(text=text,
+                                  screen=self.screen, fontsize=8,
+                                  color=txt.WHITE,
+                                  pose=pygame.Vector2(1, 1 - idx * 0.025), hor_align=txt.HorAlign.RIGHT,
+                                  vert_align=txt.VertAlign.BOTTOM)
 
     def _enable_algo_viz_callback(self, val: bool):
         self.is_enable_algo_viz = val

@@ -2,16 +2,26 @@ import numpy as np
 from pygame import gfxdraw
 
 from control.PurePursuitControl import PurePursuitControl
+from sprites.plot import PgPlot, PlotManager
+from paths import path_utils
 from utils.pgutils.pgutils import *
 from utils import math
 from utils.pgutils.text import message_to_screen, HorAlign, VertAlign
-from sprites.control_sprite import ControlSprite
+from sprites.sprite_bases import ControlSpriteBase
 
 
-class PurePursuitSprite(PurePursuitControl, ControlSprite):
-    def __init__(self, params: PurePursuitControl.Params, glob_to_screen: GlobToScreen):
+class PurePursuitSprite(PurePursuitControl, ControlSpriteBase):
+    def __init__(self, params: PurePursuitControl.Params, glob_to_screen: GlobToScreen, screen: pygame.Surface):
         PurePursuitControl.__init__(self, params)
         self.glob_to_screen = glob_to_screen
+
+        self.plot_manager = PlotManager(0.1 + 0.22, 0.01, 0.01)
+        t_plot_dur_ms = 3000
+        width = 0.1
+        height = 0.15
+        self.plot_manager.add_plot("e1",
+                                   PgPlot(math.Point(width, height), "LAT. ERROR [M]", screen, [-4, 4], t_plot_dur_ms,
+                                          1))
 
     def draw(self, screen):
         if self.nearest_pose and self.lookahead_pose:
@@ -25,25 +35,12 @@ class PurePursuitSprite(PurePursuitControl, ControlSprite):
             pygame.draw.circle(screen, WHITE, self.glob_to_screen.get_pxl_from_glob(self.car_rear_axle.to_vect2()), 4)
             pygame.draw.circle(screen, WHITE, self.glob_to_screen.get_pxl_from_glob(self.nearest_pose.to_vect2()), 4)
 
-            # curvature
-            k = self.path.get_curv_at_station(self.station)
-            rad = np.inf if k == 0 else 1 / k
-            d = 3
-            if -1000 < rad * self.glob_to_screen.pxl_per_mtr < 2000:
-                center = self.glob_to_screen.get_pxl_from_glob(
-                    math.add_body_frame(self.nearest_pose, math.Pose(0, rad, 0)).to_vect2())
-                arc_angles = np.array([-self.nearest_pose.theta - d / rad * np.sign(rad),
-                                       -self.nearest_pose.theta + d / rad * np.sign(rad)]) + np.pi / 2 * np.sign(rad)
-                gfxdraw.arc(screen, int(center.x), int(center.y), int(abs(rad * self.glob_to_screen.pxl_per_mtr)),
-                            int(np.rad2deg(arc_angles[0])), int(np.rad2deg(arc_angles[1])), (255, 255, 255))
-            else:
-                pygame.draw.line(screen, WHITE, self.glob_to_screen.get_pxl_from_glob(
-                    math.add_body_frame(self.nearest_pose, math.Pose(-d, 0, 0)).to_vect2()),
-                                 self.glob_to_screen.get_pxl_from_glob(
-                                     math.add_body_frame(self.nearest_pose, math.Pose(d, 0, 0)).to_vect2()))
 
     def draw_plots(self, screen: pygame.Surface):
-        pass
+        if self.nearest_pose:
+            self.plot_manager.plots["e1"].update(1e3 * self.glob_to_screen.time_s,
+                                                 path_utils.get_cross_err(self.nearest_pose, self.car_ref_pnt))
+            self.plot_manager.draw_plots(screen)
 
     def _draw_arc(self, screen):
         center = self.glob_to_screen.get_pxl_from_glob(

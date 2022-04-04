@@ -1,16 +1,8 @@
-import pygame
-
 from abc import ABC, abstractmethod
-import pygame_menu
 
-from paths.BSpline import BSplinePath
 from utils.pgutils.pgutils import *
-from utils import math
 from sprites.CarSprite import CarSprite
-from sprites.PathSprite import PathSprite
-from sprites.TraceSprite import TraceSprite
-from sprites.PurePursuitSprite import PurePursuitSprite
-from control import ManualControl, PurePursuitControl, SpeedControl
+from control import ManualControl
 
 
 class SceneBase(ABC):
@@ -22,7 +14,7 @@ class SceneBase(ABC):
         self.screen = screen
         self.glob_to_screen.y_pxl_rel_glob = screen.get_height() / 2
         self.next = self
-        self.time_scene_start_ms = pygame.time.get_ticks()
+        self.glob_to_screen.time_s = 0
 
     @abstractmethod
     def process_input(self, events: List[type(pygame.event)], pressed_keys):
@@ -36,19 +28,19 @@ class SceneBase(ABC):
 
     @abstractmethod
     def update(self):
-        pass
+        self.glob_to_screen.update()
 
     @abstractmethod
     def render(self):
         pass
 
+    # returns time since scene start
     def get_time_s(self) -> float:
-        return (pygame.time.get_ticks() - self.time_scene_start_ms) * 1e-3
+        return self.glob_to_screen.time_s
 
     def switch_to_scene(self, next_scene):
         if next_scene is not self:
-            self.time_scene_start_ms = pygame.time.get_ticks()
-        self.next = next_scene
+            self.next = next_scene
 
     def terminate(self):
         self.switch_to_scene(None)

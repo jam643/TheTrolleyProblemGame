@@ -36,6 +36,7 @@ class StartScene(SceneBase):
         self.menu.update(events)
 
     def update(self):
+        super().update()
         self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
         path = self.path_factory.update(self.get_time_s())
         self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt

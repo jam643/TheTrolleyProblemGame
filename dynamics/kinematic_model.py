@@ -17,14 +17,14 @@ class CartesianKinematicBicycleModel(MotionModel):
         STEER = 1
 
     @staticmethod
-    def _beta(lr, delta, wheel_base):
+    def beta(lr, delta, wheel_base):
         return np.arctan(lr * np.tan(delta) / wheel_base)
 
     @staticmethod
     def _state_to_vehicle(z, u, p: Vehicle.Params) -> Vehicle.State:
         state_idx = CartesianKinematicBicycleModel.StateIdx
         ctrl_idx = CartesianKinematicBicycleModel.CtrlIdx
-        beta = CartesianKinematicBicycleModel._beta(p.lr, u[ctrl_idx.STEER], p.wheel_base)
+        beta = CartesianKinematicBicycleModel.beta(p.lr, u[ctrl_idx.STEER], p.wheel_base)
         return Vehicle.State(x=z[state_idx.X], y=z[state_idx.Y], theta=z[state_idx.THETA],
                                                      vx=u[ctrl_idx.V] * np.cos(beta),
                                                      vy=u[ctrl_idx.V] * np.sin(beta), delta=u[ctrl_idx.STEER],
@@ -55,7 +55,7 @@ class CartesianKinematicBicycleModel(MotionModel):
         delta = u[ctrl_idx.STEER]
         vel = u[ctrl_idx.V]
 
-        beta = CartesianKinematicBicycleModel._beta(p.lr, delta, p.wheel_base)
+        beta = CartesianKinematicBicycleModel.beta(p.lr, delta, p.wheel_base)
         x_dot = vel * np.cos(beta + theta)
         y_dot = vel * np.sin(beta + theta)
         thetadot = vel * np.tan(delta) * np.cos(beta) / p.wheel_base

@@ -3,7 +3,7 @@ import scipy.interpolate as scipy_interpolate
 import pygame
 from typing import List, Tuple
 from paths.PathBase import PathBase
-from utils.math import Pose
+from utils import math
 
 
 class BSplinePath(PathBase):
@@ -22,7 +22,7 @@ class BSplinePath(PathBase):
         self.update(points)
         self.nearest_idx = 0
 
-    def get_pose_at_station(self, station: float) -> Pose:
+    def get_pose_at_station(self, station: float) -> math.Pose:
         for idx, spline_station in enumerate(self.spline_station):
             if station <= spline_station:
                 break
@@ -32,11 +32,11 @@ class BSplinePath(PathBase):
     def get_curv_at_station(self, station: float) -> float:
         for idx, spline_station in enumerate(self.spline_station):
             if station <= spline_station:
-                break
+                return self.spline_curv[idx]
 
-        return self.spline_curv[idx]
+        return self.spline_curv[-1]
 
-    def get_nearest_pose(self, point: pygame.Vector2) -> Tuple[Pose, float]:
+    def get_nearest_pose(self, point: math.Point) -> Tuple[math.Pose, float]:
         if not self.spline_list:
             return None, None
         # prev_dist = None
@@ -60,7 +60,7 @@ class BSplinePath(PathBase):
         if len(points) <= 1:
             return
         elif len(points) <= self.degree:
-            self.spline_list = [Pose(p.x, p.y, 0) for p in points]
+            self.spline_list = [math.Pose(p.x, p.y, 0) for p in points]
             self.spline_curv = [0.0] * len(self.spline_list)
             return
 
@@ -94,7 +94,7 @@ class BSplinePath(PathBase):
         # TODO add comment with derivation
         # TODO make spline state dataclass
         self.spline_curv = (dx_dt*d2y_dt2 + d2x_dt2*dy_dt) * (dx_dt**2 + dy_dt**2)**(-3/2)
-        self.spline_list = [Pose(rx[idx], ry[idx], rtheta[idx]) for idx in range(len(rx))]
+        self.spline_list = [math.Pose(rx[idx], ry[idx], rtheta[idx]) for idx in range(len(rx))]
 
     def update(self, points: List[pygame.Vector2]):
         self.__update_spline_list(points)

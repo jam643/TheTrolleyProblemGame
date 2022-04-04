@@ -1,3 +1,4 @@
+import numpy as np
 from scipy import integrate
 import enum
 from abc import ABC, abstractmethod
@@ -16,7 +17,7 @@ class MotionModel(ABC):
         self._int_scheme_map = {self.IntScheme.EULER: self._integrate_euler, self.IntScheme.RK4: self._integrate_rk4}
 
     def update(self, vehicle_state: Vehicle, steer, vel, dt) -> Vehicle:
-        u = self._to_ctrl(steer, vel)
+        u = self._to_ctrl(np.clip(steer, -vehicle_state.params.delta_max, vehicle_state.params.delta_max), vel)
         z = self._vehicle_to_state(vehicle_state.state_cog)
         z_new = self._int_scheme_map[self._int_scheme](self._eqn_of_motn, z, u, vehicle_state.params, dt)
 

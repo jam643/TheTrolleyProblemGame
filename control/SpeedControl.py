@@ -11,7 +11,7 @@ class SpeedControl:
         max_speed: float = 20
         min_accel: float = -4
         max_accel: float = 3
-        station_setpoint: float = 10
+        station_setpoint: float = 18
         p: float = 0.5
         p_d: float = 1
 

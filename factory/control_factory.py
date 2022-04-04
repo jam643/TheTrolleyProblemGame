@@ -10,6 +10,7 @@ from sprites.StanleyControlSprite import StanleyControlSprite, StanleyControl
 from sprites.PurePursuitSprite import PurePursuitSprite, PurePursuitControl
 from sprites.dlqr_sprite import DLQRSprite, DiscreteLQRPathTracker
 from utils.pgutils.text import menu_config, v_frame
+import utils.pgutils.pgutils as utils
 
 
 class ControlType(enum.Enum):
@@ -33,7 +34,7 @@ class ControlBuilderInterface(ABC):
 class StanleyControlBuilder(ControlBuilderInterface):
     def __init__(self, glob_to_screen, screen: pygame.Surface):
         self._params = StanleyControl.Params(1.0)
-        self._control = StanleyControlSprite(self._params, glob_to_screen)
+        self._control = StanleyControlSprite(self._params, glob_to_screen, screen)
 
         self._menu = menu_config(screen, "STANLEY")
         f_menu = v_frame(screen, self._menu)
@@ -56,7 +57,7 @@ class StanleyControlBuilder(ControlBuilderInterface):
 class PurePursuitBuilder(ControlBuilderInterface):
     def __init__(self, glob_to_screen, screen: pygame.Surface):
         self._params = PurePursuitControl.Params(0.7)
-        self._control = PurePursuitSprite(self._params, glob_to_screen)
+        self._control = PurePursuitSprite(self._params, glob_to_screen, screen)
 
         self._menu = menu_config(screen, "PURE PURSUIT")
         f_menu = v_frame(screen, self._menu)
@@ -78,8 +79,8 @@ class PurePursuitBuilder(ControlBuilderInterface):
 
 
 class DLQRBuilder(ControlBuilderInterface):
-    def __init__(self, glob_to_screen, screen: pygame.Surface):
-        self._params = DiscreteLQRPathTracker.Params(np.eye(4), np.eye(1), 1 / 60.)
+    def __init__(self, glob_to_screen: utils.GlobToScreen, screen: pygame.Surface):
+        self._params = DiscreteLQRPathTracker.Params(np.eye(4), np.eye(1), glob_to_screen.sim_dt)
         self._control = DLQRSprite(self._params, glob_to_screen, screen)
 
         self._menu = menu_config(screen, "DISC. LQR", fontsize=12)

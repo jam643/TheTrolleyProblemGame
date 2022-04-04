@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import pygame
 
 
-class ControlSprite(ABC):
+class ControlSpriteBase(ABC):
     @abstractmethod
     def draw(self, screen: pygame.Surface):
         pass
