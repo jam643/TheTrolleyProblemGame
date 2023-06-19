@@ -23,9 +23,9 @@ class CartesianDynamicBicycleModel(MotionModel):
         state_idx = CartesianDynamicBicycleModel.StateIdx
         ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
         return Vehicle.State(x=z[state_idx.X], y=z[state_idx.Y], theta=z[state_idx.THETA],
-                                                     vx=u[ctrl_idx.VX],
-                                                     vy=z[state_idx.VY], delta=u[ctrl_idx.STEER],
-                                                     thetadot=z[state_idx.THETADOT])
+                             vx=u[ctrl_idx.VX],
+                             vy=z[state_idx.VY], delta=u[ctrl_idx.STEER],
+                             thetadot=z[state_idx.THETADOT])
 
     @staticmethod
     def _vehicle_to_state(vehicle_state_cog: Vehicle.State) -> List:
@@ -47,6 +47,14 @@ class CartesianDynamicBicycleModel(MotionModel):
         return u
 
     @staticmethod
+    def lat_force_front_tire(cf, vy, vx, thetadot, lf, delta):
+        return cf * (delta - np.arctan((vy + thetadot * lf) / vx))
+
+    @staticmethod
+    def lat_force_rear_tire(cr, vy, vx, thetadot, lr):
+        return -cr * np.arctan((vy - thetadot * lr) / vx)
+
+    @staticmethod
     def _eqn_of_motn(z: List, u: List, p: Vehicle.Params):
         state_idx = CartesianDynamicBicycleModel.StateIdx
         ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
@@ -60,10 +68,12 @@ class CartesianDynamicBicycleModel(MotionModel):
         vx = u[ctrl_idx.VX]
         delta = u[ctrl_idx.STEER]
 
-        term1 = -p.cf * (np.arctan((vy + p.lf * thetadot) / vx) - delta) * np.cos(delta)
-        term2 = p.cr * np.arctan((vy - p.lr * thetadot) / vx)
-        vydot = (term1 - term2) / p.m - vx * thetadot
-        thetadotdot = (p.lf * term1 + p.lr * term2) / p.Iz
+        # lateral tire forces assuming linear tire model
+        force_yf = CartesianDynamicBicycleModel.lat_force_front_tire(p.cf, vy, vx, thetadot, p.lf, delta)
+        force_yr = CartesianDynamicBicycleModel.lat_force_rear_tire(p.cr, vy, vx, thetadot, p.lr)
+
+        vydot = (force_yr + force_yf*np.cos(delta)) / p.m - vx * thetadot
+        thetadotdot = (p.lf * force_yf * np.cos(delta) - p.lr * force_yr) / p.Iz
 
         xdot = vx * np.cos(theta) - vy * np.sin(theta)
         ydot = vy * np.cos(theta) + vx * np.sin(theta)
