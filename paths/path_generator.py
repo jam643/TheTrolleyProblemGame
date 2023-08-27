@@ -20,7 +20,7 @@ class PathGeneratorBase(ABC):
 class PathManualGenerator(PathGeneratorBase):
     @dataclass
     class Params:
-        max_path_length: int = 13
+        max_path_length: int = 16
         update_rate_s: float = 0.2
 
     def __init__(self, params: Params, glob_to_screen: GlobToScreen):
@@ -35,9 +35,11 @@ class PathManualGenerator(PathGeneratorBase):
         # todo clean up logic
 
         self.mouse_position = pygame.Vector2(pygame.mouse.get_pos())
-        if (time_s - self.spline_timer) > self._params.update_rate_s:
+        if self.spline_timer > self._params.update_rate_s:
             self.last_pose.append(self.glob_to_screen.get_glob_from_pxl(pygame.Vector2(self.mouse_position)))
-            self.spline_timer = time_s
+            self.spline_timer = 0
+        else:
+            self.spline_timer += self.glob_to_screen.sim_dt
         try:
             path.update(self.last_pose + [self.glob_to_screen.get_glob_from_pxl(self.mouse_position)])
             if len(self.last_pose) > self._params.max_path_length:

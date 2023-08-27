@@ -6,12 +6,13 @@ from utils import math
 # --- Globals ---
 import utils.math
 
-COLOR1 = (30, 60, 86)
-COLOR3 = (141, 105, 122)
-COLOR4 = (94, 88, 114)
-COLOR6 = (153, 117, 119)
-COLOR7 = (255, 212, 163)
-COLOR8 = (255, 236, 214)
+COLOR1 = (30, 60, 86)  # darkish blue
+COLOR3 = (141, 105, 122)  # light/pale maroon
+COLOR4 = (94, 88, 114)  # light/pale purple
+COLOR6 = (153, 117, 119)  # lighter/paler maroon
+COLOR7 = (255, 212, 163)  # light/pale, yellow
+COLOR8 = (255, 236, 214)  # lighter/paler, yellow
+COLOR9 = (184, 59, 94)  # maroon
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 

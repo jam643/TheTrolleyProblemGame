@@ -6,7 +6,7 @@ from control import ManualControl
 
 
 class SceneBase(ABC):
-    glob_to_screen = GlobToScreen(35, 0, 0, fps=60, play_speed=2)
+    glob_to_screen = GlobToScreen(40, 0, 0, fps=60, play_speed=2)
     clock = pygame.time.Clock()
 
     def __init__(self, screen: pygame.Surface):

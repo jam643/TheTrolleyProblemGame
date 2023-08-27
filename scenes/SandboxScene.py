@@ -1,7 +1,6 @@
 import pygame_menu
 
 from scenes.Scenes import SceneBase
-from scenes import StartScene
 from utils.pgutils.pgutils import *
 from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font
 from factory.control_factory import ControlType, ControlFactory
@@ -15,7 +14,7 @@ class SandboxScene(SceneBase):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 40
-        self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.dlqr)
+        self.control_factory = ControlFactory(self.glob_to_screen, self.screen, ControlType.stanley)
         self.vehicle_factory = VehicleFactory(self.glob_to_screen, self.screen, draw_plots=True)
         self.path_factory = PathFactory(self.glob_to_screen, self.screen, PathGenType.auto_gen)
 
@@ -31,7 +30,9 @@ class SandboxScene(SceneBase):
         self.menu.add.button("LL CONTROL", self.path_factory.menu)
         self.menu.add.button("SCENE", self.path_factory.menu)
 
-        def start_scene_callback(): self.next = StartScene.StartScene(self.screen)
+        def start_scene_callback():
+            from scenes import StartScene
+            self.next = StartScene.StartScene(self.screen)
 
         self.menu.add.button("MAIN MENU", start_scene_callback)
         self.is_enable_algo_viz = True
@@ -75,7 +76,7 @@ class SandboxScene(SceneBase):
         if self.path_factory.current_path_gen_type is PathGenType.auto_gen:  # todo move to scene_factory
             self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed_mps * self.glob_to_screen.sim_dt * self.glob_to_screen.pxl_per_mtr
         else:
-            self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed_mps * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt * (
+            self.glob_to_screen.x_pxl_rel_glob -= 1.5 * self.scroll_speed_mps * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt * (
                     (pygame.mouse.get_pos()[0] / self.screen.get_width()) - 0.5) * 2
 
     def render(self):

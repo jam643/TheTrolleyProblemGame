@@ -2,6 +2,7 @@ import pygame_menu
 
 from scenes.Scenes import SceneBase
 from scenes.SandboxScene import SandboxScene
+from scenes.game_scene import LevelScene
 from utils.pgutils.pgutils import *
 from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign
 from factory.control_factory import ControlFactory, ControlType
@@ -15,14 +16,18 @@ class StartScene(SceneBase):
         super().__init__(screen)
         self.glob_to_screen.pxl_per_mtr = 50
 
-        self.control_factory = ControlFactory(glob_to_screen=self.glob_to_screen, screen=self.screen, cont_type=ControlType.pure_pursuit)
+        self.control_factory = ControlFactory(glob_to_screen=self.glob_to_screen, screen=self.screen, cont_type=ControlType.pure_pursuit, draw_plots=False)
         self.vehicle_factory = VehicleFactory(self.glob_to_screen, screen)
         self.path_factory = PathFactory(self.glob_to_screen, self.screen, PathGenType.auto_gen)
         self.menu = menu_default(self.screen, theme_default(50), enabled=True)
 
         def sandbox_callback():
             self.next = SandboxScene(self.screen)
-        self.menu.add.button("PLAY")
+
+        def game_callback():
+            self.next = LevelScene(self.screen)
+
+        self.menu.add.button("PLAY", game_callback)
         self.menu.add.button("SANDBOX", sandbox_callback)
         self.menu.add.button("QUIT", pygame_menu.events.EXIT)
 

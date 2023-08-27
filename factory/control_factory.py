@@ -157,13 +157,13 @@ class DLQRBuilder(ControlBuilderInterface):
 
 
 class ControlFactory:
-    def __init__(self, glob_to_screen, screen, cont_type: ControlType):
+    def __init__(self, glob_to_screen, screen, cont_type: ControlType, draw_plots=True):
         self._control_builder_map = {ControlType.pure_pursuit: PurePursuitBuilder(glob_to_screen, screen),
                                      ControlType.stanley: StanleyControlBuilder(glob_to_screen, screen),
                                      ControlType.dlqr: DLQRBuilder(glob_to_screen, screen)}
 
         self._current_control_type = cont_type
-        self._draw_plots = True
+        self._draw_plots = draw_plots
 
         self.controller_menu = menu_config(title="PATH TRACKER", screen=screen)
         f_controller_menu = v_frame(screen, self.controller_menu)

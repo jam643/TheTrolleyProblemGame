@@ -47,6 +47,7 @@ class VehicleFactory:
 
     def update(self, steer, vel, dt):
         self.vehicle_state = self._motion_model_map[self._current_model_type].update(self.vehicle_state, steer, vel, dt)
+        self.car_sprite.update(self.vehicle_state.state_cog)
         return self.vehicle_state
 
     def draw(self, screen: pygame.Surface):
@@ -147,7 +148,7 @@ class VehicleFactory:
 
     def reset_init_pose(self):
         pose_init = self.glob_to_screen.get_pose_glob_from_pxl(
-            math.Pose(self.screen.get_width() / 2, self.screen.get_height() / 2, 0))
+            math.Pose(self.screen.get_width() / 4, self.screen.get_height() / 2, 0))
         vel_init = 10
         self.vehicle_state = Vehicle(params=Vehicle.Params()).build_pose(pose_init).build_vel(vel_init, 0)
         self.car_sprite = CarSprite(self.glob_to_screen, self.vehicle_state.params)
