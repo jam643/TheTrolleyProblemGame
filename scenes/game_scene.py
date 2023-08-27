@@ -24,10 +24,7 @@ class LevelParams:
     wall_generator: WallGenerator
 
 
-levels_list = [LevelParams(scroll_speed=7, n_walls=4, n_lives=2,
-                           wall_generator=RandomWallGenerator(time_range=(2, 4), door_height=1 / 2,
-                                                              door_pose_range=(1 / 4, 3 / 4))),
-               LevelParams(scroll_speed=7, n_walls=8, n_lives=3,
+levels_list = [LevelParams(scroll_speed=7, n_walls=8, n_lives=3,
                            wall_generator=SinWallGenerator(3, 12, 1 / 2, 1 / 2)),
                LevelParams(scroll_speed=6, n_walls=20, n_lives=3,
                            wall_generator=SinWallGenerator(1, 16, 2 / 3, 1 / 3)),
@@ -36,7 +33,7 @@ levels_list = [LevelParams(scroll_speed=7, n_walls=4, n_lives=2,
                LevelParams(scroll_speed=9, n_walls=60, n_lives=3,
                            wall_generator=SinWallGenerator(0.2, 6, 2 / 3, 1 / 3)),
                LevelParams(scroll_speed=10, n_walls=15, n_lives=3,
-                           wall_generator=RandomWallGenerator(time_range=(2, 4), door_height=1 / 3,
+                           wall_generator=RandomWallGenerator(time_range=(0.5, 2), door_height=1 / 3,
                                                               door_pose_range=(1 / 6, 5 / 6)))]
 
 
