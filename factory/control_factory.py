@@ -4,11 +4,13 @@ import pygame
 import pygame_menu
 from abc import ABC, abstractmethod
 import numpy as np
+import subprocess
 
 from control.ControllerBase import ControllerBase
+from control.lqr_path_tracker import LQRPathTrackerBase, KinematicLQRPathTracker, DynamicLQRPathTracker
 from sprites.StanleyControlSprite import StanleyControlSprite, StanleyControl
 from sprites.PurePursuitSprite import PurePursuitSprite, PurePursuitControl
-from sprites.dlqr_sprite import DLQRSprite, DiscreteLQRPathTracker
+from sprites.lqr_sprite import LQRSprite
 from utils.pgutils.text import menu_config, v_frame
 import utils.pgutils.pgutils as utils
 
@@ -16,7 +18,8 @@ import utils.pgutils.pgutils as utils
 class ControlType(enum.Enum):
     pure_pursuit = 0
     stanley = 1
-    dlqr = 2
+    kinematic_lqr = 2
+    dynamic_lqr = 3
 
 
 class ControlBuilderInterface(ABC):
@@ -78,12 +81,16 @@ class PurePursuitBuilder(ControlBuilderInterface):
         self.control.set_params(self._params)
 
 
-class DLQRBuilder(ControlBuilderInterface):
-    def __init__(self, glob_to_screen: utils.GlobToScreen, screen: pygame.Surface):
-        self._params = DiscreteLQRPathTracker.Params(np.eye(4), np.eye(1), glob_to_screen.sim_dt)
-        self._control = DLQRSprite(self._params, glob_to_screen, screen)
+class LQRBuilder(ControlBuilderInterface):
+    class LqrEnum(enum.Enum):
+        kinematic = KinematicLQRPathTracker
+        dynamic = DynamicLQRPathTracker
 
-        self._menu = menu_config(screen, "DISC. LQR", fontsize=12)
+    def __init__(self, lqr_enum: LqrEnum, glob_to_screen: utils.GlobToScreen, screen: pygame.Surface):
+        self._params = LQRPathTrackerBase.Params(np.eye(4), np.eye(1), glob_to_screen.sim_dt)
+        self._control = LQRSprite(lqr_enum.value(self._params), glob_to_screen, screen)
+
+        self._menu = menu_config(screen, "LQR", fontsize=12)
         f_menu = v_frame(screen, self._menu)
 
         f_menu.pack(self._menu.add.label("STATE WEIGHTS:"))
@@ -145,7 +152,7 @@ class DLQRBuilder(ControlBuilderInterface):
         val = round(val, 1)
         array[row, col] = val
         labels[row, col].set_title("{:.1f}".format(val))
-        self._control.set_params(self._params)
+        self._control.tracker.set_params(self._params)
 
     @property
     def menu(self) -> pygame_menu.Menu:
@@ -160,20 +167,31 @@ class ControlFactory:
     def __init__(self, glob_to_screen, screen, cont_type: ControlType, draw_plots=True):
         self._control_builder_map = {ControlType.pure_pursuit: PurePursuitBuilder(glob_to_screen, screen),
                                      ControlType.stanley: StanleyControlBuilder(glob_to_screen, screen),
-                                     ControlType.dlqr: DLQRBuilder(glob_to_screen, screen)}
+                                     ControlType.kinematic_lqr: LQRBuilder(LQRBuilder.LqrEnum.kinematic, glob_to_screen,
+                                                                           screen),
+                                     ControlType.dynamic_lqr: LQRBuilder(LQRBuilder.LqrEnum.dynamic, glob_to_screen,
+                                                                         screen)}
 
         self._current_control_type = cont_type
         self._draw_plots = draw_plots
+        self._subprocess_list = []
 
         self.controller_menu = menu_config(title="PATH TRACKER", screen=screen)
         f_controller_menu = v_frame(screen, self.controller_menu)
         f_controller_menu.pack(self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
                                                                             ("STANLEY", ControlType.stanley),
-                                                                            ("DISC. LQR", ControlType.dlqr)],
+                                                                            ("KINE. LQR", ControlType.kinematic_lqr),
+                                                                            ("DYN. LQR", ControlType.dynamic_lqr)],
                                                                    default=cont_type.value,
-                                                                   onchange=self._change_control_callback))
+                                                                   onchange=self._change_control_callback,
+                                                                    selection_box_height=7))
         self.control_algo_settings_button = f_controller_menu.pack(self.controller_menu.add.button("ALGO SETTINGS",
                                                                                                    self._get_menu()))
+        f_controller_menu.pack(
+            self.controller_menu.add.button("DOCS", action=lambda: self._subprocess_list.append(subprocess.Popen(
+                ["pipenv", "run", "jupyter", "notebook",
+                 "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
+                 "./control/docs/Path Tracking Controls.ipynb"], stdout=subprocess.PIPE))))
         f_controller_menu.pack(
             self.controller_menu.add.toggle_switch("SHOW PLOTS", default=self._draw_plots, state_text=("N", "Y"),
                                                    onchange=self._draw_plots_callback, width=80))
@@ -198,3 +216,7 @@ class ControlFactory:
 
     def _draw_plots_callback(self, val: bool):
         self._draw_plots = val
+
+    def __del__(self):
+        for process in self._subprocess_list:
+            process.kill()

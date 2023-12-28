@@ -75,7 +75,7 @@ class VehicleFactory:
             self.vehicle_menu.add.button("DOCS", action=lambda: self._subprocess_list.append(subprocess.Popen(
                 ["pipenv", "run", "jupyter", "notebook",
                  "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
-                 "./dynamics/docs/KinematicBicycleModel.ipynb"], stdout=subprocess.PIPE))))
+                 "./dynamics/docs/VehicleMotionModel.ipynb"], stdout=subprocess.PIPE))))
         f_vehicle_menu.pack(
             self.vehicle_menu.add.toggle_switch("SHOW PLOTS", default=self._draw_plots, state_text=("N", "Y"),
                                                 onchange=self._draw_plots_callback, width=80))

@@ -39,18 +39,8 @@ class BSplinePath(PathBase):
     def get_nearest_pose(self, point: math.Point) -> Tuple[math.Pose, float]:
         if not self.spline_list:
             return None, None
-        # prev_dist = None
-        # nearest_idx = 0
         dist = [np.sqrt((point.x - p.x) ** 2 + (point.y - p.y) ** 2) for p in self.spline_list]
         nearest_idx = np.argmin(dist)
-        # for idx in range(self.nearest_idx, len(self.spline_list)):
-        #     dist = np.sqrt((point.x - self.spline_list[idx].x) ** 2 + (point.y - self.spline_list[idx].y) ** 2)
-        #     if prev_dist and (prev_dist < dist):
-        #         nearest_idx = idx - 1
-        #         break
-        #     if idx == len(self.spline_list) - 1:
-        #         nearest_idx = idx
-        #     prev_dist = dist
         self.nearest_idx = nearest_idx
         return self.spline_list[self.nearest_idx], self.spline_station[self.nearest_idx]
 

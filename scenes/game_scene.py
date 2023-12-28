@@ -13,7 +13,7 @@ from control import SpeedControl
 from factory.wall_factory import WallFactory
 from sprites.health_bar import HealthBar
 import utils.pgutils.text as txt
-from factory.wall_generators import RandomWallGenerator, WallGenerator, SinWallGenerator
+from factory.wall_generators import RandomWallGenerator, WallGenerator, SinWallGenerator, ChirpWallGenerator
 
 
 @dataclass
@@ -30,6 +30,8 @@ levels_list = [LevelParams(scroll_speed=7, n_walls=8, n_lives=3,
                            wall_generator=SinWallGenerator(1, 16, 2 / 3, 1 / 3)),
                LevelParams(scroll_speed=8, n_walls=60, n_lives=3,
                            wall_generator=SinWallGenerator(0.3, 12, 2 / 3, 1 / 3)),
+               LevelParams(scroll_speed=9, n_walls=100, n_lives=3,
+                           wall_generator=ChirpWallGenerator(0.2, 18, 5, 10, 1 / 2, 1 / 2)),
                LevelParams(scroll_speed=9, n_walls=60, n_lives=3,
                            wall_generator=SinWallGenerator(0.2, 6, 2 / 3, 1 / 3)),
                LevelParams(scroll_speed=10, n_walls=15, n_lives=3,

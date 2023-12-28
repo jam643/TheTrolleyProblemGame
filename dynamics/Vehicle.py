@@ -23,7 +23,7 @@ class Vehicle:
         lr: float = 1.5  # Distance from CG to rear axle[m]
         cf: float = 1e5  # Front cornering stiffness[N / rad]
         cr: float = 1e5  # Rear cornering stiffness[N / rad]
-        delta_max: float = np.deg2rad(50)  # +/- tire angle limit [rad]
+        delta_max: float = np.deg2rad(60)  # +/- tire angle limit [rad]
 
         @property
         def wheel_base(self):
