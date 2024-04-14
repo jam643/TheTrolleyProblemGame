@@ -1,6 +1,6 @@
 import numpy as np
 import enum
-from typing import List, Callable
+from typing import List
 
 from dynamics.Vehicle import Vehicle
 from dynamics.motion_model_base import MotionModel
@@ -13,10 +13,11 @@ class CartesianDynamicBicycleModel(MotionModel):
         VY = 2
         THETA = 3
         THETADOT = 4
+        DELTA = 5
 
     class CtrlIdx(enum.IntEnum):
         VX = 0
-        STEER = 1
+        DELTA_RATE = 1
 
     @staticmethod
     def _state_to_vehicle(z, u, _) -> Vehicle.State:
@@ -24,7 +25,7 @@ class CartesianDynamicBicycleModel(MotionModel):
         ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
         return Vehicle.State(x=z[state_idx.X], y=z[state_idx.Y], theta=z[state_idx.THETA],
                              vx=u[ctrl_idx.VX],
-                             vy=z[state_idx.VY], delta=u[ctrl_idx.STEER],
+                             vy=z[state_idx.VY], delta=z[state_idx.DELTA], delta_rate=u[ctrl_idx.DELTA_RATE],
                              thetadot=z[state_idx.THETADOT])
 
     @staticmethod
@@ -36,13 +37,14 @@ class CartesianDynamicBicycleModel(MotionModel):
         z[state_idx.VY] = vehicle_state_cog.vy
         z[state_idx.THETA] = vehicle_state_cog.theta
         z[state_idx.THETADOT] = vehicle_state_cog.thetadot
+        z[state_idx.DELTA] = vehicle_state_cog.delta
         return z
 
     @staticmethod
-    def _to_ctrl(steer, vel) -> List:
+    def _to_ctrl(steer_rate, vel) -> List:
         ctrl_idx = CartesianDynamicBicycleModel.CtrlIdx
         u = [0.0] * len(ctrl_idx)
-        u[ctrl_idx.STEER] = steer
+        u[ctrl_idx.DELTA_RATE] = steer_rate
         u[ctrl_idx.VX] = vel
         return u
 
@@ -63,10 +65,11 @@ class CartesianDynamicBicycleModel(MotionModel):
         vy = z[state_idx.VY]
         theta = z[state_idx.THETA]
         thetadot = z[state_idx.THETADOT]
+        delta = z[state_idx.DELTA]
 
         # unpack control
         vx = u[ctrl_idx.VX]
-        delta = u[ctrl_idx.STEER]
+        delta_dot = u[ctrl_idx.DELTA_RATE]
 
         # lateral tire forces assuming linear tire model
         force_yf = CartesianDynamicBicycleModel.lat_force_front_tire(p.cf, vy, vx, thetadot, p.lf, delta)
@@ -78,11 +81,14 @@ class CartesianDynamicBicycleModel(MotionModel):
         xdot = vx * np.cos(theta) - vy * np.sin(theta)
         ydot = vy * np.cos(theta) + vx * np.sin(theta)
 
+
+
         z_dot = [None] * len(state_idx)
         z_dot[state_idx.X] = xdot
         z_dot[state_idx.Y] = ydot
         z_dot[state_idx.VY] = vydot
         z_dot[state_idx.THETA] = thetadot
         z_dot[state_idx.THETADOT] = thetadotdot
+        z_dot[state_idx.DELTA] = delta_dot
 
         return z_dot

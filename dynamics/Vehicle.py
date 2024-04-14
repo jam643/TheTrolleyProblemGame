@@ -11,19 +11,21 @@ class Vehicle:
         y: float = 0
         theta: float = 0
         delta: float = 0
+        delta_rate: float = 0
         vx: float = 0  # body frame
         vy: float = 0  # body frame
         thetadot: float = 0
 
     @dataclass
     class Params:
-        m: float = 2000  # Mass[kg]
-        Iz: float = 4000  # Yaw inertia[kg * m ^ 2]
+        m: float = 500  # Mass[kg]
+        Iz: float = 1000  # Yaw inertia[kg * m ^ 2]
         lf: float = 1.5  # Distance from CG to front axle[m]
         lr: float = 1.5  # Distance from CG to rear axle[m]
         cf: float = 1e5  # Front cornering stiffness[N / rad]
         cr: float = 1e5  # Rear cornering stiffness[N / rad]
         delta_max: float = np.deg2rad(60)  # +/- tire angle limit [rad]
+        delta_rate_max: float = np.deg2rad(500)  # +/- tire angle rate limit [rad/s]
 
         @property
         def wheel_base(self):

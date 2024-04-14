@@ -87,32 +87,37 @@ class LQRBuilder(ControlBuilderInterface):
         dynamic = DynamicLQRPathTracker
 
     def __init__(self, lqr_enum: LqrEnum, glob_to_screen: utils.GlobToScreen, screen: pygame.Surface):
-        self._params = LQRPathTrackerBase.Params(np.eye(4), np.eye(1), glob_to_screen.sim_dt)
+        default_Q = np.zeros((4, 4))
+        default_R = np.zeros((1, 1))
+        default_Q[0, 0] = 0.1
+        default_R[0, 0] = 5.0
+
+        self._params = LQRPathTrackerBase.Params(Q=default_Q, R=default_R, dt=glob_to_screen.sim_dt)
         self._control = LQRSprite(lqr_enum.value(self._params), glob_to_screen, screen)
 
         self._menu = menu_config(screen, "LQR", fontsize=12)
         f_menu = v_frame(screen, self._menu)
 
         f_menu.pack(self._menu.add.label("STATE WEIGHTS:"))
-        f_menu.pack(self._menu.add.range_slider("CTE", self._params.Q[0, 0], (0, 5), 0.1,
+        f_menu.pack(self._menu.add.range_slider("CTE", self._params.Q[0, 0], (0, 1), 0.01,
                                                 onchange=lambda val: self._update_matrix_param(val, self._params.Q,
                                                                                                self.labels_Q, 0, 0),
                                                 font_size=8))
-        f_menu.pack(self._menu.add.range_slider("YAW_ERR", self._params.Q[1, 1], (0, 5), 0.1,
+        f_menu.pack(self._menu.add.range_slider("YAW_ERR", self._params.Q[1, 1], (0, 1), 0.01,
                                                 onchange=lambda val: self._update_matrix_param(val, self._params.Q,
                                                                                                self.labels_Q, 1, 1),
                                                 font_size=8))
-        f_menu.pack(self._menu.add.range_slider("CTE_RATE", self._params.Q[2, 2], (0, 5), 0.1,
+        f_menu.pack(self._menu.add.range_slider("CTE_RATE", self._params.Q[2, 2], (0, 1), 0.01,
                                                 onchange=lambda val: self._update_matrix_param(val, self._params.Q,
                                                                                                self.labels_Q, 2, 2),
                                                 font_size=8))
-        f_menu.pack(self._menu.add.range_slider("YAW_ERR_RATE", self._params.Q[3, 3], (0, 5), 0.1,
+        f_menu.pack(self._menu.add.range_slider("YAW_ERR_RATE", self._params.Q[3, 3], (0, 1), 0.01,
                                                 onchange=lambda val: self._update_matrix_param(val, self._params.Q,
                                                                                                self.labels_Q, 3, 3),
                                                 font_size=8))
 
         f_menu.pack(self._menu.add.label("INPUT WEIGHTS:", padding=(20, 0, 0, 0)))
-        f_menu.pack(self._menu.add.range_slider("DELTA", self._params.Q[0, 0], (0.1, 5), 0.1,
+        f_menu.pack(self._menu.add.range_slider("DELTA", self._params.R[0, 0], (0.1, 20), 0.5,
                                                 onchange=lambda val: self._update_matrix_param(val, self._params.R,
                                                                                                self.labels_R, 0, 0),
                                                 font_size=8))

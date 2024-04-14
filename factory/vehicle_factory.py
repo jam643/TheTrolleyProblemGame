@@ -41,12 +41,14 @@ class VehicleFactory:
         width = 0.1
         height = 0.15
         self.plot_manager.add_plot("steer",
-                                   PgPlot(math.Point(width, height), "STEER [DEG]", screen, [-40, 40], 3000, 20))
+                                   PgPlot(math.Point(width, height), "STEER [DEG]", screen, [-65, 65], 3000, 20))
+        self.plot_manager.add_plot("steer rate",
+                                   PgPlot(math.Point(width, height), "STEER RATE [DEG/S]", screen, [-550, 550], 3000, 250))
         self.plot_manager.add_plot("speed",
                                    PgPlot(math.Point(width, height), "SPEED (COG) [M/S]", screen, [0, 30], 3000, 5))
 
-    def update(self, steer, vel, dt):
-        self.vehicle_state = self._motion_model_map[self._current_model_type].update(self.vehicle_state, steer, vel, dt)
+    def update(self, steer_rate, steer_desired, vel, dt):
+        self.vehicle_state = self._motion_model_map[self._current_model_type].update(self.vehicle_state, steer_rate, steer_desired, vel, dt)
         self.car_sprite.update(self.vehicle_state.state_cog)
         return self.vehicle_state
 
@@ -55,6 +57,8 @@ class VehicleFactory:
         if self._draw_plots:
             self.plot_manager.plots["steer"].update(1e3 * self.glob_to_screen.time_s,
                                                     np.rad2deg(self.vehicle_state.state_cog.delta))
+            self.plot_manager.plots["steer rate"].update(1e3 * self.glob_to_screen.time_s,
+                                                    np.rad2deg(self.vehicle_state.state_cog.delta_rate))
             self.plot_manager.plots["speed"].update(1e3 * self.glob_to_screen.time_s,
                                                    self.vehicle_state.vel_cog_mag)
             self.plot_manager.draw_plots(screen)

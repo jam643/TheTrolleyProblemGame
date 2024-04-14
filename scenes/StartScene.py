@@ -8,7 +8,7 @@ from utils.pgutils.text import theme_default, menu_default, message_to_screen, V
 from factory.control_factory import ControlFactory, ControlType
 from factory.vehicle_factory import VehicleFactory
 from factory.path_factory import PathFactory, PathGenType
-from control import SpeedControl
+from control.LowLevelControl import SpeedControl, SteerControl
 
 
 class StartScene(SceneBase):
@@ -32,9 +32,11 @@ class StartScene(SceneBase):
         self.menu.add.button("QUIT", pygame_menu.events.EXIT)
 
         self.scroll_speed = 10
-        self.steer = 0
+        self.steer_desired = self.vehicle_factory.vehicle_state.state_cog.delta
+        self.steer_rate = self.vehicle_factory.vehicle_state.state_cog.delta_rate
         self.vel = self.vehicle_factory.vehicle_state.state_cog.vx
-        self.speed_control = SpeedControl.SpeedControl(SpeedControl.SpeedControl.Params())
+        self.speed_control = SpeedControl(SpeedControl.Params())
+        self.steer_control = SteerControl(SteerControl.Params())
 
     def process_input(self, events, pressed_keys):
         super().process_input(events, pressed_keys)
@@ -42,10 +44,11 @@ class StartScene(SceneBase):
 
     def update(self):
         super().update()
-        self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
+        self.vehicle_factory.update(self.steer_rate, self.steer_desired, self.vel, self.glob_to_screen.sim_dt)
         path = self.path_factory.update(self.get_time_s())
         self.glob_to_screen.x_pxl_rel_glob -= self.scroll_speed * self.glob_to_screen.pxl_per_mtr * self.glob_to_screen.sim_dt
-        self.steer = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_desired = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_rate = self.steer_control.update(self.vehicle_factory.vehicle_state, self.steer_desired, self.glob_to_screen.sim_dt)
         self.vel = self.speed_control.update(self.vehicle_factory.vehicle_state, path,
                                                        self.glob_to_screen.sim_dt)
 

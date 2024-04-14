@@ -14,7 +14,7 @@ class LQRSprite(ControlSpriteBase):
         self.glob_to_screen = glob_to_screen
 
         # plotting
-        self.plot_manager = PlotManager(0.1 + 0.22, 0.01, 0.01)
+        self.plot_manager = PlotManager(0.1 + 0.33, 0.01, 0.01)
         t_plot_dur_ms = 3000
         width = 0.1
         height = 0.15

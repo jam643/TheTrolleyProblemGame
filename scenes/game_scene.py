@@ -1,15 +1,13 @@
 import pygame.sprite
-import pygame_menu
-from dataclasses import dataclass
 import numpy as np
 
 from scenes.Scenes import SceneBase
 from utils.pgutils.pgutils import *
-from utils.pgutils.text import theme_default, menu_default, message_to_screen, VertAlign, HorAlign, game_font
+from utils.pgutils.text import menu_default, message_to_screen, VertAlign, HorAlign
 from factory.control_factory import ControlType, ControlFactory
 from factory.vehicle_factory import VehicleFactory
 from factory.path_factory import PathFactory, PathGenType
-from control import SpeedControl
+from control.LowLevelControl import SpeedControl, SteerControl
 from factory.wall_factory import WallFactory
 from sprites.health_bar import HealthBar
 import utils.pgutils.text as txt
@@ -54,9 +52,11 @@ class LevelScene(SceneBase):
         self.path_factory = PathFactory(self.glob_to_screen, self.screen, PathGenType.manual_draw)
         self.health_bar = HealthBar(self.level_params.n_lives)
 
-        self.speed_control = SpeedControl.SpeedControl(SpeedControl.SpeedControl.Params())
-        self.steer = 0
+        self.steer_desired = self.vehicle_factory.vehicle_state.state_cog.delta
+        self.steer_rate = self.vehicle_factory.vehicle_state.state_cog.delta_rate
         self.vel = self.vehicle_factory.vehicle_state.state_cog.vx
+        self.speed_control = SpeedControl(SpeedControl.Params())
+        self.steer_control = SteerControl(SteerControl.Params())
 
     def update(self):
         super().update()
@@ -64,10 +64,12 @@ class LevelScene(SceneBase):
             self.next = GameScene(self.screen, self.level_idx, self.path_factory, self.vehicle_factory,
                                   self.control_factory, self.speed_control, self.health_bar)
 
-        self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
+        self.vehicle_factory.update(self.steer_rate, self.steer_desired, self.vel, self.glob_to_screen.sim_dt)
 
         path = self.path_factory.update(self.glob_to_screen.time_s)
-        self.steer = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_desired = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_rate = self.steer_control.update(self.vehicle_factory.vehicle_state, self.steer_desired,
+                                                    self.glob_to_screen.sim_dt)
         self.vel = self.speed_control.update(self.vehicle_factory.vehicle_state, path,
                                              self.glob_to_screen.sim_dt)
 
@@ -123,9 +125,12 @@ class GameScene(SceneBase):
         self.menu.add.button("MAIN MENU", start_scene_callback)
         self.menu.add.button("RESTART", restart_callback)
         self.pause_scene = False
-        self.speed_control = speed_control
-        self.steer = 0
+
+        self.steer_desired = self.vehicle_factory.vehicle_state.state_cog.delta
+        self.steer_rate = self.vehicle_factory.vehicle_state.state_cog.delta_rate
         self.vel = self.vehicle_factory.vehicle_state.state_cog.vx
+        self.speed_control = SpeedControl(SpeedControl.Params())
+        self.steer_control = SteerControl(SteerControl.Params())
 
         self.wall_factory = WallFactory(glob_to_screen=self.glob_to_screen, screen=screen,
                                         n_walls=self.level_params.n_walls,
@@ -166,13 +171,15 @@ class GameScene(SceneBase):
             if not self.vehicle_factory.car_sprite.is_colliding:
                 self.health_bar -= 1
             self.vehicle_factory.car_sprite.set_colliding()
-        self.vehicle_factory.update(self.steer, self.vel, self.glob_to_screen.sim_dt)
+        self.vehicle_factory.update(self.steer_rate, self.steer_desired, self.vel, self.glob_to_screen.sim_dt)
 
         if self.vehicle_factory.car_sprite.rect.left < 0:
             self.vehicle_factory.car_sprite.rect.left = 0
 
         path = self.path_factory.update(self.glob_to_screen.time_s)
-        self.steer = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_desired = self.control_factory.control.update(self.vehicle_factory.vehicle_state, path)
+        self.steer_rate = self.steer_control.update(self.vehicle_factory.vehicle_state, self.steer_desired,
+                                                    self.glob_to_screen.sim_dt)
         self.vel = self.speed_control.update(self.vehicle_factory.vehicle_state, path,
                                              self.glob_to_screen.sim_dt)
 

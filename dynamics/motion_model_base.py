@@ -16,13 +16,15 @@ class MotionModel(ABC):
         self._int_scheme = int_scheme
         self._int_scheme_map = {self.IntScheme.EULER: self._integrate_euler, self.IntScheme.RK4: self._integrate_rk4}
 
-    def update(self, vehicle_state: Vehicle, steer, vel, dt) -> Vehicle:
-        u = self._to_ctrl(np.clip(steer, -vehicle_state.params.delta_max, vehicle_state.params.delta_max), vel)
+    def update(self, vehicle_state: Vehicle, steer_rate, steer_desired, vel, dt) -> Vehicle:
+        u = self._to_ctrl(steer_rate, vel)
         z = self._vehicle_to_state(vehicle_state.state_cog)
         z_new = self._int_scheme_map[self._int_scheme](self._eqn_of_motn, z, u, vehicle_state.params, dt)
 
         vehicle_state_new = Vehicle(state_cog=self._state_to_vehicle(z_new, u, vehicle_state.params),
                                     params=vehicle_state.params)
+        delta = vehicle_state_new.state_cog.delta
+        vehicle_state_new.state_cog.delta = np.clip(delta, -vehicle_state.params.delta_max, vehicle_state.params.delta_max)
         return vehicle_state_new
 
     @staticmethod

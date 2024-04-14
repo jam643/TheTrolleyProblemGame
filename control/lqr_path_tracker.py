@@ -93,7 +93,7 @@ class LQRPathTrackerBase(ControllerBase, ABC):
 
         def __post_init__(self):
             # TODO add checks
-            assert np.all(np.linalg.eigvals(self.Q) > 0)
+            assert np.all(np.linalg.eigvals(self.Q) >= 0)
 
     def __init__(self, params: Params):
         self.set_params(params)
