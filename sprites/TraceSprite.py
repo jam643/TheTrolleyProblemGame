@@ -4,9 +4,9 @@ from utils.pgutils.pgutils import *
 
 
 class TraceSprite(object):
-    def __init__(self, glob_to_screen: GlobToScreen):
+    def __init__(self, sim_to_real: SimToReal):
         super().__init__()
-        self.glob_to_screen = glob_to_screen
+        self.sim_to_real = sim_to_real
 
         self.trace = []
         self.trace_max_T = 3
@@ -18,4 +18,9 @@ class TraceSprite(object):
 
     def draw(self, screen):
         if len(self.trace) > 1:
-            pygame.draw.aalines(screen, COLOR8, False, self.glob_to_screen.get_pxl_from_glob(self.trace))
+            pygame.draw.aalines(
+                screen,
+                COLOR8,
+                False,
+                [self.sim_to_real.get_sim_from_real(t) for t in self.trace],
+            )

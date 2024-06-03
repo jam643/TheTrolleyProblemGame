@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import pygame
 from typing import List, overload, Tuple, Union
 from utils import math
+import numpy as np
+from functools import singledispatchmethod
 
 # --- Globals ---
 import utils.math
@@ -17,80 +19,150 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
-class GlobToScreen:
+class SimToReal:
+    @dataclass
+    class Params:
+        pxl_per_meter: float  # Pixels per meter conversion factor
+        screen_ref_frame_rel_real: (
+            math.Pose
+        )  # Pose of the screen reference frame relative to the real-world reference frame
+        fps: float  # Frames per second of the simulation
+        sim_time_rel_real: float  # Simulation time relative to real-world time
 
-    def __init__(self, pxl_per_mtr: float, x_pxl_rel_glob: float, y_pxl_rel_glob: float, fps: float, play_speed: float):
-        self.pxl_per_mtr = pxl_per_mtr
-        self.x_pxl_rel_glob = x_pxl_rel_glob
-        self.y_pxl_rel_glob = y_pxl_rel_glob
-        self.fps = fps
-        self.play_speed = play_speed
+    def __init__(self, params: Params):
+        self.params = params
+        self.time_s = 0.0
 
-        self.time_s = 0
+    @singledispatchmethod
+    def get_sim_from_real(self, points) -> np.ndarray | math.Point:
+        """
+        Converts points in real-world reference frame to sim reference frame.
+        """
+        raise AttributeError
 
-    @overload
-    def get_pxl_from_glob(self, points: pygame.Vector2) -> pygame.Vector2:
-        ...
+    @get_sim_from_real.register
+    def _(self, vec: np.ndarray) -> np.ndarray:
+        """
+        Args:
+            vec (np.ndarray): [3, N] The vector to be converted.
 
-    @overload
-    def get_pxl_from_glob(self, points: List[pygame.Vector2]) -> List[pygame.Vector2]:
-        ...
+        Returns:
+            np.ndarray: [3, N] The converted vector in simulation coordinates.
+        """
 
-    def get_pxl_from_glob(self, points):
-        if type(points) is list:
-            return [pygame.Vector2(point.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
-                                   -point.y * self.pxl_per_mtr + self.y_pxl_rel_glob) for point in points]
-        elif type(points) is utils.math.Point:
-            return pygame.Vector2(points.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
-                                  -points.y * self.pxl_per_mtr + self.y_pxl_rel_glob)
-        elif type(points) is pygame.Vector2:
-            return pygame.Vector2(points.x * self.pxl_per_mtr + self.x_pxl_rel_glob,
-                                  -points.y * self.pxl_per_mtr + self.y_pxl_rel_glob)
-        else:
-            raise AttributeError
+        vec_rel_sim = math.rot_trans_3d(
+            vec,
+            angle_rad=-self.params.screen_ref_frame_rel_real.theta,
+            dx=-self.params.screen_ref_frame_rel_real.x,
+            dy=-self.params.screen_ref_frame_rel_real.y,
+            rotate_first=False,
+            scale_vec=self.params.pxl_per_meter,
+            scale_trans=self.params.pxl_per_meter,
+        )
 
-    # @overload
-    # def get_glob_from_pxl(self, points: pygame.Vector2) -> pygame.Vector2:
-    #     ...
-    #
-    # @overload
-    # def get_glob_from_pxl(self, points: List[pygame.Vector2]) -> List[pygame.Vector2]:
-    #     ...
+        vec_rel_sim[1, :] = -vec_rel_sim[
+            1, :
+        ]  # Flip the y-axis to follow right-hand rule
+        return vec_rel_sim
 
-    def get_glob_from_pxl(self, points):
-        if type(points) is list:
-            return [pygame.Vector2((point.x - self.x_pxl_rel_glob) / self.pxl_per_mtr,
-                                   (self.y_pxl_rel_glob - point.y) / self.pxl_per_mtr) for point in points]
-        elif type(points) is pygame.Vector2:
-            return pygame.Vector2((points.x - self.x_pxl_rel_glob) / self.pxl_per_mtr,
-                                  (self.y_pxl_rel_glob - points.y) / self.pxl_per_mtr)
-        else:
-            raise AttributeError
+    @get_sim_from_real.register
+    def _(self, pnt: math.Point) -> math.Point:
+        """
+        Args:
+            pnt (math.Point): The real-world point to be converted.
 
-    def get_pose_glob_from_pxl(self, poses: Union[List[math.Pose], math.Pose]):
-        if type(poses) is list:
-            return [math.Pose((pose.x - self.x_pxl_rel_glob) / self.pxl_per_mtr,
-                                   (self.y_pxl_rel_glob - pose.y) / self.pxl_per_mtr, -pose.theta) for pose in poses]
-        elif type(poses) is math.Pose:
-            return math.Pose((poses.x - self.x_pxl_rel_glob) / self.pxl_per_mtr,
-                                  (self.y_pxl_rel_glob - poses.y) / self.pxl_per_mtr, -poses.theta)
-        else:
-            raise AttributeError
+        Returns:
+            math.Point: The converted simulated point.
+        """
+        return math.Point(
+            *(self.get_sim_from_real(np.vstack([pnt.x, pnt.y, 0]))[:2, :].flatten())
+        )
+
+    @get_sim_from_real.register
+    def _(self, pose: math.Pose) -> math.Pose:
+        """
+        Args:
+            pnt (math.Point): The real-world point to be converted.
+
+        Returns:
+            math.Point: The converted simulated point.
+        """
+        return math.Pose(
+            *(self.get_sim_from_real(np.vstack([pose.x, pose.y, pose.theta])).flatten())
+        )
+
+    @singledispatchmethod
+    def get_real_from_sim(self, points) -> np.ndarray | math.Point:
+        """
+        Converts points in sim reference frame to real-world reference frame.
+        """
+        raise AttributeError
+
+    @get_real_from_sim.register
+    def _(self, vec: np.ndarray) -> np.ndarray:
+        """
+        Args:
+            vec (np.ndarray): [3, N] The vector to be converted.
+
+        Returns:
+            np.ndarray: [3, N] The converted vector in real-world coordinates.
+        """
+        vec[1, :] = -vec[1, :]  # Flip the y-axis to follow right-hand rule
+        return math.rot_trans_3d(
+            vec,
+            angle_rad=self.params.screen_ref_frame_rel_real.theta,
+            dx=self.params.screen_ref_frame_rel_real.x,
+            dy=self.params.screen_ref_frame_rel_real.y,
+            scale_vec=1 / self.params.pxl_per_meter,
+            rotate_first=True,
+        )
+
+    @get_real_from_sim.register
+    def _(self, pose: math.Pose) -> math.Pose:
+        return math.Pose(
+            *self.get_real_from_sim(np.vstack([pose.x, pose.y, pose.theta])).flatten()
+        )
+
+    @get_real_from_sim.register
+    def _(self, pose: math.Point) -> math.Point:
+        return math.Point(
+            *self.get_real_from_sim(np.vstack([pose.x, pose.y, 0]))[:2, :].flatten()
+        )
 
     @property
-    def sim_dt(self):
-        return self.play_speed / self.fps
+    def sim_dt(self) -> float:
+        """
+        Returns the time step for the simulation, calculated as the ratio of simulated time to frames per second.
+
+        Returns:
+            float: The time step for the simulation.
+        """
+        return self.params.sim_time_rel_real / self.params.fps
 
     def update(self):
         self.time_s += self.sim_dt
 
 
-def draw_polygons(surf: pygame.Surface, polygon_list: List[List[Tuple[float, float]]], cog_pose: math.Point, colors: List[pygame.Color],
-                  glob_to_screen: GlobToScreen):
-    # centerx = surf.get_rect().centerx
-    # centery = surf.get_rect().centery
-    for idx, poly in enumerate(polygon_list):
-        poly_transf = [((p[0] + cog_pose.x) * glob_to_screen.pxl_per_mtr,
-                        (p[1] + cog_pose.y) * glob_to_screen.pxl_per_mtr) for p in poly]
-        pygame.draw.polygon(surf, colors[idx], poly_transf)
-        pygame.draw.lines(surf, (0,0,0), True, poly_transf, int(glob_to_screen.pxl_per_mtr / 7))
+def draw_polygons(
+    surf: pygame.Surface,
+    polygon_list: List[np.ndarray],
+    colors: List[pygame.Color],
+    sim_to_real: SimToReal,
+):
+    """
+    Draw polygons on a surface.
+
+    Args:
+        surf (pygame.Surface): The surface to draw the polygons on.
+        polygon_list (List[np.ndarray]): A list of NumPy arrays representing the polygons.
+        colors (List[pygame.Color]): A list of colors for each polygon.
+
+    Returns:
+        None
+    """
+    for idx, polygon in enumerate(polygon_list):
+        polygon = [(p[0], p[1]) for p in polygon.T]
+        pygame.draw.polygon(surf, colors[idx], polygon)
+        pygame.draw.lines(
+            surf, (0, 0, 0), True, polygon, int(sim_to_real.params.pxl_per_meter / 7)
+        )

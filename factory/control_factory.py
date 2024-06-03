@@ -7,7 +7,11 @@ import numpy as np
 import subprocess
 
 from control.ControllerBase import ControllerBase
-from control.lqr_path_tracker import LQRPathTrackerBase, KinematicLQRPathTracker, DynamicLQRPathTracker
+from control.lqr_path_tracker import (
+    LQRPathTrackerBase,
+    KinematicLQRPathTracker,
+    DynamicLQRPathTracker,
+)
 from sprites.StanleyControlSprite import StanleyControlSprite, StanleyControl
 from sprites.PurePursuitSprite import PurePursuitSprite, PurePursuitControl
 from sprites.lqr_sprite import LQRSprite
@@ -25,23 +29,25 @@ class ControlType(enum.Enum):
 class ControlBuilderInterface(ABC):
     @property
     @abstractmethod
-    def menu(self) -> pygame_menu.Menu:
-        ...
+    def menu(self) -> pygame_menu.Menu: ...
 
     @property
     @abstractmethod
-    def control(self) -> ControllerBase:
-        ...
+    def control(self) -> ControllerBase: ...
 
 
 class StanleyControlBuilder(ControlBuilderInterface):
-    def __init__(self, glob_to_screen, screen: pygame.Surface):
+    def __init__(self, sim_to_real, screen: pygame.Surface):
         self._params = StanleyControl.Params(1.0)
-        self._control = StanleyControlSprite(self._params, glob_to_screen, screen)
+        self._control = StanleyControlSprite(self._params, sim_to_real, screen)
 
         self._menu = menu_config(screen, "STANLEY")
         f_menu = v_frame(screen, self._menu)
-        f_menu.pack(self._menu.add.range_slider("K", self._params.k, (0, 5), 0.05, onchange=self._k_callback))
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "K", self._params.k, (0, 5), 0.05, onchange=self._k_callback
+            )
+        )
         f_menu.pack(self._menu.add.button("BACK", pygame_menu.events.BACK))
 
     @property
@@ -58,14 +64,21 @@ class StanleyControlBuilder(ControlBuilderInterface):
 
 
 class PurePursuitBuilder(ControlBuilderInterface):
-    def __init__(self, glob_to_screen, screen: pygame.Surface):
+    def __init__(self, sim_to_real, screen: pygame.Surface):
         self._params = PurePursuitControl.Params(0.7)
-        self._control = PurePursuitSprite(self._params, glob_to_screen, screen)
+        self._control = PurePursuitSprite(self._params, sim_to_real, screen)
 
         self._menu = menu_config(screen, "PURE PURSUIT")
         f_menu = v_frame(screen, self._menu)
-        f_menu.pack(self._menu.add.range_slider("LOOKAHEAD K", self._params.lookahead_k, (0, 5), 0.05,
-                                                onchange=self._lookahead_k_callback))
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "LOOKAHEAD K",
+                self._params.lookahead_k,
+                (0, 5),
+                0.05,
+                onchange=self._lookahead_k_callback,
+            )
+        )
         f_menu.pack(self._menu.add.button("BACK", pygame_menu.events.BACK))
 
     @property
@@ -86,41 +99,85 @@ class LQRBuilder(ControlBuilderInterface):
         kinematic = KinematicLQRPathTracker
         dynamic = DynamicLQRPathTracker
 
-    def __init__(self, lqr_enum: LqrEnum, glob_to_screen: utils.GlobToScreen, screen: pygame.Surface):
+    def __init__(
+        self, lqr_enum: LqrEnum, sim_to_real: utils.SimToReal, screen: pygame.Surface
+    ):
         default_Q = np.zeros((4, 4))
         default_R = np.zeros((1, 1))
         default_Q[0, 0] = 0.1
         default_R[0, 0] = 5.0
 
-        self._params = LQRPathTrackerBase.Params(Q=default_Q, R=default_R, dt=glob_to_screen.sim_dt)
-        self._control = LQRSprite(lqr_enum.value(self._params), glob_to_screen, screen)
+        self._params = LQRPathTrackerBase.Params(
+            Q=default_Q, R=default_R, dt=sim_to_real.sim_dt
+        )
+        self._control = LQRSprite(lqr_enum.value(self._params), sim_to_real, screen)
 
         self._menu = menu_config(screen, "LQR", fontsize=12)
         f_menu = v_frame(screen, self._menu)
 
         f_menu.pack(self._menu.add.label("STATE WEIGHTS:"))
-        f_menu.pack(self._menu.add.range_slider("CTE", self._params.Q[0, 0], (0, 1), 0.01,
-                                                onchange=lambda val: self._update_matrix_param(val, self._params.Q,
-                                                                                               self.labels_Q, 0, 0),
-                                                font_size=8))
-        f_menu.pack(self._menu.add.range_slider("YAW_ERR", self._params.Q[1, 1], (0, 1), 0.01,
-                                                onchange=lambda val: self._update_matrix_param(val, self._params.Q,
-                                                                                               self.labels_Q, 1, 1),
-                                                font_size=8))
-        f_menu.pack(self._menu.add.range_slider("CTE_RATE", self._params.Q[2, 2], (0, 1), 0.01,
-                                                onchange=lambda val: self._update_matrix_param(val, self._params.Q,
-                                                                                               self.labels_Q, 2, 2),
-                                                font_size=8))
-        f_menu.pack(self._menu.add.range_slider("YAW_ERR_RATE", self._params.Q[3, 3], (0, 1), 0.01,
-                                                onchange=lambda val: self._update_matrix_param(val, self._params.Q,
-                                                                                               self.labels_Q, 3, 3),
-                                                font_size=8))
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "CTE",
+                self._params.Q[0, 0],
+                (0, 1),
+                0.01,
+                onchange=lambda val: self._update_matrix_param(
+                    val, self._params.Q, self.labels_Q, 0, 0
+                ),
+                font_size=8,
+            )
+        )
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "YAW_ERR",
+                self._params.Q[1, 1],
+                (0, 1),
+                0.01,
+                onchange=lambda val: self._update_matrix_param(
+                    val, self._params.Q, self.labels_Q, 1, 1
+                ),
+                font_size=8,
+            )
+        )
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "CTE_RATE",
+                self._params.Q[2, 2],
+                (0, 1),
+                0.01,
+                onchange=lambda val: self._update_matrix_param(
+                    val, self._params.Q, self.labels_Q, 2, 2
+                ),
+                font_size=8,
+            )
+        )
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "YAW_ERR_RATE",
+                self._params.Q[3, 3],
+                (0, 1),
+                0.01,
+                onchange=lambda val: self._update_matrix_param(
+                    val, self._params.Q, self.labels_Q, 3, 3
+                ),
+                font_size=8,
+            )
+        )
 
         f_menu.pack(self._menu.add.label("INPUT WEIGHTS:", padding=(20, 0, 0, 0)))
-        f_menu.pack(self._menu.add.range_slider("DELTA", self._params.R[0, 0], (0.1, 20), 0.5,
-                                                onchange=lambda val: self._update_matrix_param(val, self._params.R,
-                                                                                               self.labels_R, 0, 0),
-                                                font_size=8))
+        f_menu.pack(
+            self._menu.add.range_slider(
+                "DELTA",
+                self._params.R[0, 0],
+                (0.1, 20),
+                0.5,
+                onchange=lambda val: self._update_matrix_param(
+                    val, self._params.R, self.labels_R, 0, 0
+                ),
+                font_size=8,
+            )
+        )
 
         f_menu.pack(self._menu.add.label("MATRICES:", padding=(20, 0, 0, 0)))
 
@@ -137,7 +194,9 @@ class LQRBuilder(ControlBuilderInterface):
         self.labels_R = self.array_to_label(self._params.R)
         table_R.add_row(self.labels_R[0, 0])
 
-        fh = self._menu.add.frame_h(width=table_Q.get_width(), height=table_Q.get_height())
+        fh = self._menu.add.frame_h(
+            width=table_Q.get_width(), height=table_Q.get_height()
+        )
         fh.pack(self._menu.add.label("Q="))
         fh.relax()
         fh.pack(table_Q)
@@ -169,13 +228,17 @@ class LQRBuilder(ControlBuilderInterface):
 
 
 class ControlFactory:
-    def __init__(self, glob_to_screen, screen, cont_type: ControlType, draw_plots=True):
-        self._control_builder_map = {ControlType.pure_pursuit: PurePursuitBuilder(glob_to_screen, screen),
-                                     ControlType.stanley: StanleyControlBuilder(glob_to_screen, screen),
-                                     ControlType.kinematic_lqr: LQRBuilder(LQRBuilder.LqrEnum.kinematic, glob_to_screen,
-                                                                           screen),
-                                     ControlType.dynamic_lqr: LQRBuilder(LQRBuilder.LqrEnum.dynamic, glob_to_screen,
-                                                                         screen)}
+    def __init__(self, sim_to_real, screen, cont_type: ControlType, draw_plots=True):
+        self._control_builder_map = {
+            ControlType.pure_pursuit: PurePursuitBuilder(sim_to_real, screen),
+            ControlType.stanley: StanleyControlBuilder(sim_to_real, screen),
+            ControlType.kinematic_lqr: LQRBuilder(
+                LQRBuilder.LqrEnum.kinematic, sim_to_real, screen
+            ),
+            ControlType.dynamic_lqr: LQRBuilder(
+                LQRBuilder.LqrEnum.dynamic, sim_to_real, screen
+            ),
+        }
 
         self._current_control_type = cont_type
         self._draw_plots = draw_plots
@@ -183,24 +246,53 @@ class ControlFactory:
 
         self.controller_menu = menu_config(title="PATH TRACKER", screen=screen)
         f_controller_menu = v_frame(screen, self.controller_menu)
-        f_controller_menu.pack(self.controller_menu.add.dropselect("ALGO", [("PURE PURSUIT", ControlType.pure_pursuit),
-                                                                            ("STANLEY", ControlType.stanley),
-                                                                            ("KINE. LQR", ControlType.kinematic_lqr),
-                                                                            ("DYN. LQR", ControlType.dynamic_lqr)],
-                                                                   default=cont_type.value,
-                                                                   onchange=self._change_control_callback,
-                                                                    selection_box_height=7))
-        self.control_algo_settings_button = f_controller_menu.pack(self.controller_menu.add.button("ALGO SETTINGS",
-                                                                                                   self._get_menu()))
         f_controller_menu.pack(
-            self.controller_menu.add.button("DOCS", action=lambda: self._subprocess_list.append(subprocess.Popen(
-                ["pipenv", "run", "jupyter", "notebook",
-                 "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
-                 "./control/docs/Path Tracking Controls.ipynb"], stdout=subprocess.PIPE))))
+            self.controller_menu.add.dropselect(
+                "ALGO",
+                [
+                    ("PURE PURSUIT", ControlType.pure_pursuit),
+                    ("STANLEY", ControlType.stanley),
+                    ("KINE. LQR", ControlType.kinematic_lqr),
+                    ("DYN. LQR", ControlType.dynamic_lqr),
+                ],
+                default=cont_type.value,
+                onchange=self._change_control_callback,
+                selection_box_height=7,
+            )
+        )
+        self.control_algo_settings_button = f_controller_menu.pack(
+            self.controller_menu.add.button("ALGO SETTINGS", self._get_menu())
+        )
         f_controller_menu.pack(
-            self.controller_menu.add.toggle_switch("SHOW PLOTS", default=self._draw_plots, state_text=("N", "Y"),
-                                                   onchange=self._draw_plots_callback, width=80))
-        f_controller_menu.pack(self.controller_menu.add.button("BACK", pygame_menu.events.BACK))
+            self.controller_menu.add.button(
+                "DOCS",
+                action=lambda: self._subprocess_list.append(
+                    subprocess.Popen(
+                        [
+                            "pipenv",
+                            "run",
+                            "jupyter",
+                            "notebook",
+                            "--MultiKernelManager.default_kernel_name=thetrolleyproblemgame",
+                            "./control/docs/Path Tracking Controls.ipynb",
+                        ],
+                        stdout=subprocess.PIPE,
+                    )
+                ),
+            )
+        )
+        f_controller_menu.pack(
+            self.controller_menu.add.toggle_switch(
+                "SHOW PLOTS",
+                default=self._draw_plots,
+                state_text=("N", "Y"),
+                onchange=self._draw_plots_callback,
+                width=80,
+            )
+        )
+        f_controller_menu.pack(
+            self.controller_menu.add.button("BACK", pygame_menu.events.BACK)
+        )
 
     @property
     def control(self) -> ControllerBase:

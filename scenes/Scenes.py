@@ -6,15 +6,24 @@ from control import ManualControl
 
 
 class SceneBase(ABC):
-    glob_to_screen = GlobToScreen(40, 0, 0, fps=60, play_speed=2)
+    sim_to_real = SimToReal(
+        SimToReal.Params(
+            pxl_per_meter=40,
+            screen_ref_frame_rel_real=math.Pose(0, 0, 0),
+            fps=60,
+            sim_time_rel_real=2,
+        )
+    )
     clock = pygame.time.Clock()
 
     def __init__(self, screen: pygame.Surface):
         super().__init__()
         self.screen = screen
-        self.glob_to_screen.y_pxl_rel_glob = screen.get_height() / 2
+        self.sim_to_real.params.screen_ref_frame_rel_real.y = screen.get_height() / (
+            2 * self.sim_to_real.params.pxl_per_meter
+        )
         self.next = self
-        self.glob_to_screen.time_s = 0
+        self.sim_to_real.time_s = 0
 
     @abstractmethod
     def process_input(self, events: List[type(pygame.event)], pressed_keys):
@@ -28,7 +37,7 @@ class SceneBase(ABC):
 
     @abstractmethod
     def update(self):
-        self.glob_to_screen.update()
+        self.sim_to_real.update()
 
     @abstractmethod
     def render(self):
@@ -36,7 +45,7 @@ class SceneBase(ABC):
 
     # returns time since scene start
     def get_time_s(self) -> float:
-        return self.glob_to_screen.time_s
+        return self.sim_to_real.time_s
 
     def switch_to_scene(self, next_scene):
         if next_scene is not self:
@@ -50,19 +59,19 @@ class ManualDrivingScene(SceneBase):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen)
 
-        self.car_sprite = CarSprite(self.glob_to_screen)
+        self.car_sprite = CarSprite(self.sim_to_real)
 
         self.manual_control = ManualControl.ManualControl(70 * np.pi / 180, 0.04, 0.1)
         self.steer = None
-        # trace_sprite = TraceSprite(screen, glob_to_screen)
+        # trace_sprite = TraceSprite(screen, sim_to_real)
 
     def process_input(self, events, pressed_keys):
         self.steer = self.manual_control.update(pressed_keys)
 
     def update(self):
-        self.car_sprite.update(self.steer, self.glob_to_screen.sim_dt)
+        self.car_sprite.update(self.steer, self.sim_to_real.sim_dt)
         # trace_sprite.update(car_sprite.z[CarSprite.StateIdx.X], car_sprite.z[CarSprite.StateIdx.Y],
-        #                     glob_to_screen.sim_dt)
+        #                     sim_to_real.sim_dt)
 
     def render(self):
         self.screen.fill(COLOR1)
