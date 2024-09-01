@@ -61,7 +61,6 @@ class TrolleyProblemGameEnv(gym.Env):
         self.sim_to_real.params.pxl_per_meter = 40
 
         self.start_time = self.sim_to_real.time_s
-        self.count_down = 6
         self.control_factory = ControlFactory(
             self.sim_to_real, self.screen, ControlType.stanley, draw_plots=False
         )
@@ -79,3 +78,5 @@ class TrolleyProblemGameEnv(gym.Env):
         self.speed_control = SpeedControl(SpeedControl.Params())
         self.steer_control = SteerControl(SteerControl.Params())
 
+    def step(self, action):
+        
